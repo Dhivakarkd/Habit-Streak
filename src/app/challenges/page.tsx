@@ -139,25 +139,27 @@ export default function ChallengesPage() {
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold leading-none tracking-tight">
+            <h1 className="text-xl md:text-2xl font-semibold leading-none tracking-tight">
               Discover Challenges
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground">
               Join a community or start your own journey.
             </p>
           </div>
-          <div className="flex w-full gap-2 md:w-auto">
+          <div className="flex w-full md:w-auto gap-2 flex-shrink-0">
             <Input
               placeholder="Search challenges..."
-              className="flex-1 md:w-64"
+              className="flex-1 md:flex-initial md:w-64"
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
             />
-            <Button asChild>
+            <Button asChild className="flex-shrink-0">
               <Link href="/challenges/new">
-                <PlusCircle className="mr-2 h-4 w-4" /> Create
+                <PlusCircle className="mr-1 md:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Create</span>
+                <span className="sm:hidden">+</span>
               </Link>
             </Button>
           </div>
@@ -174,28 +176,32 @@ export default function ChallengesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="flex flex-wrap gap-4">
             {filteredChallenges.map((challenge) => (
-              <ChallengeCard
+              <div
                 key={challenge.id}
-                challenge={challenge}
-                isMember={membershipMap[challenge.id] || false}
-                onJoinSuccess={() => {
-                  // Update membership map after joining
-                  setMembershipMap(prev => ({
-                    ...prev,
-                    [challenge.id]: true
-                  }));
-                  
-                  // Invalidate both dashboard and challenges caches
-                  if (user) {
-                    revalidateCache(`challenges:user:${user.id}`);
-                    revalidateCache(`challenges:all:user:${user.id}`);
-                    revalidateCache(`challenge:memberships:${user.id}`);
-                  }
-                }}
-                variant="discover"
-              />
+                className="w-full basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4 min-w-0"
+              >
+                <ChallengeCard
+                  challenge={challenge}
+                  isMember={membershipMap[challenge.id] || false}
+                  onJoinSuccess={() => {
+                    // Update membership map after joining
+                    setMembershipMap(prev => ({
+                      ...prev,
+                      [challenge.id]: true
+                    }));
+                    
+                    // Invalidate both dashboard and challenges caches
+                    if (user) {
+                      revalidateCache(`challenges:user:${user.id}`);
+                      revalidateCache(`challenges:all:user:${user.id}`);
+                      revalidateCache(`challenge:memberships:${user.id}`);
+                    }
+                  }}
+                  variant="discover"
+                />
+              </div>
             ))}
           </div>
         )}

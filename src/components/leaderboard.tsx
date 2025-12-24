@@ -88,72 +88,95 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ challengeId }) => {
   return (
     <div className="w-full">
       <Tabs value={activeFilter} onValueChange={(value) => handleFilterChange(value as SortFilter)}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="current-streak">Current Streak</TabsTrigger>
-          <TabsTrigger value="best-streak">Best Streak</TabsTrigger>
-          <TabsTrigger value="completion-rate">Completion Rate</TabsTrigger>
-          <TabsTrigger value="missed-days">Missed Days</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsTrigger value="current-streak" className="text-xs md:text-sm px-1 md:px-3 py-1 md:py-2">
+            <span className="hidden md:inline">Current Streak</span>
+            <span className="md:hidden">Current</span>
+          </TabsTrigger>
+          <TabsTrigger value="best-streak" className="text-xs md:text-sm px-1 md:px-3 py-1 md:py-2">
+            <span className="hidden md:inline">Best Streak</span>
+            <span className="md:hidden">Best</span>
+          </TabsTrigger>
+          <TabsTrigger value="completion-rate" className="text-xs md:text-sm px-1 md:px-3 py-1 md:py-2">
+            <span className="hidden md:inline">Completion Rate</span>
+            <span className="md:hidden">Rate</span>
+          </TabsTrigger>
+          <TabsTrigger value="missed-days" className="text-xs md:text-sm px-1 md:px-3 py-1 md:py-2">
+            <span className="hidden md:inline">Missed Days</span>
+            <span className="md:hidden">Missed</span>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeFilter} className="mt-6">
+        <TabsContent value={activeFilter} className="mt-4 md:mt-6">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-muted-foreground">Loading leaderboard...</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Loading leaderboard...</p>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-red-500">{error}</p>
+              <p className="text-xs md:text-sm text-red-500">{error}</p>
             </div>
           ) : leaderboard.length === 0 ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-muted-foreground">No entries yet</p>
+              <p className="text-xs md:text-sm text-muted-foreground">No entries yet</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Rank</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead className="text-right">{getMetricLabel(activeFilter)}</TableHead>
-                  <TableHead>Achievements</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leaderboard.map((entry) => (
-                  <TableRow key={entry.userId}>
-                    <TableCell className="font-bold">
-                      <Badge variant={entry.rank === 1 ? 'default' : 'outline'}>{entry.rank}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={entry.avatarUrl} alt={entry.username} />
-                          <AvatarFallback>{entry.username.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{entry.username}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">{getMetricValue(entry, activeFilter)}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-2">
-                        {entry.achievements.map((achievement) => (
-                          <Badge
-                            key={achievement.id}
-                            variant="secondary"
-                            title={achievement.description}
-                            className="cursor-help"
-                          >
-                            {achievement.icon ? <span className="mr-1">{achievement.icon}</span> : null}
-                            {achievement.name}
+            <div className="overflow-x-auto -mx-4 md:mx-0">
+              <div className="inline-block min-w-full md:w-full px-4 md:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="text-xs md:text-sm">
+                      <TableHead className="w-8 md:w-12">Rank</TableHead>
+                      <TableHead className="min-w-32 md:min-w-40">User</TableHead>
+                      <TableHead className="text-right min-w-24 md:min-w-32">{getMetricLabel(activeFilter)}</TableHead>
+                      <TableHead className="hidden md:table-cell min-w-40">Achievements</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leaderboard.map((entry) => (
+                      <TableRow key={entry.userId} className="text-xs md:text-sm">
+                        <TableCell className="font-bold">
+                          <Badge variant={entry.rank === 1 ? 'default' : 'outline'} className="text-xs">
+                            {entry.rank}
                           </Badge>
-                        ))}
-                        {entry.achievements.length === 0 && <span className="text-xs text-muted-foreground">-</span>}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 md:gap-3">
+                            <Avatar className="h-7 w-7 md:h-8 md:w-8 flex-shrink-0">
+                              <AvatarImage src={entry.avatarUrl} alt={entry.username} />
+                              <AvatarFallback className="text-xs">{entry.username.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium truncate text-xs md:text-sm">{entry.username}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">{getMetricValue(entry, activeFilter)}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex flex-wrap gap-1 md:gap-2">
+                            {entry.achievements.slice(0, 3).map((achievement) => (
+                              <Badge
+                                key={achievement.id}
+                                variant="secondary"
+                                title={achievement.description}
+                                className="cursor-help text-xs"
+                              >
+                                {achievement.icon ? <span className="mr-1">{achievement.icon}</span> : null}
+                                <span className="hidden lg:inline">{achievement.name}</span>
+                              </Badge>
+                            ))}
+                            {entry.achievements.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{entry.achievements.length - 3}
+                              </Badge>
+                            )}
+                            {entry.achievements.length === 0 && <span className="text-xs text-muted-foreground">-</span>}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
         </TabsContent>
       </Tabs>

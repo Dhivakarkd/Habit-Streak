@@ -41,6 +41,8 @@ export type Challenge = {
   updatedAt: string;
   currentStreak?: number;
   bestStreak?: number;
+  completionRate?: number;
+  achievements?: Achievement[];
   members?: User[];
   checkins?: Checkin[];
 };
@@ -51,7 +53,7 @@ export type Checkin = {
   challengeId: string;
   userId: string;
   date: string; // YYYY-MM-DD
-  status: 'completed' | 'missed' | 'pending';
+  status: 'completed' | 'missed' | 'pending' | 'freeze';
   createdAt: string;
 };
 
@@ -115,5 +117,5 @@ export type CreateChallengeRequest = {
 export type CheckinRequest = {
   challengeId: string;
   date: string;
-  status: 'completed' | 'missed' | 'pending';
+  status: 'completed' | 'missed' | 'pending' | 'freeze';
 };

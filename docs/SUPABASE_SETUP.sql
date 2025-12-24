@@ -88,7 +88,8 @@ CREATE TABLE checkins (
   challenge_id uuid NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   check_in_date date NOT NULL,
-  status text NOT NULL CHECK (status IN ('completed', 'missed', 'pending')),
+  status text NOT NULL CHECK (status IN ('completed', 'missed', 'pending', 'freeze')),
+  notes text,
   created_at timestamp with time zone DEFAULT now(),
   UNIQUE(challenge_id, user_id, check_in_date)
 );
@@ -202,7 +203,8 @@ BEGIN
     AND user_id = NEW.user_id
     AND status = 'missed';
 
-  -- Calculate current streak (consecutive completed days)
+  -- Calculate current streak (consecutive completed OR freeze days)
+  -- Freeze days don't break streaks, they extend them like completed days
   WITH consecutive_completed AS (
     SELECT
       check_in_date,
@@ -211,14 +213,14 @@ BEGIN
     FROM checkins
     WHERE challenge_id = NEW.challenge_id
       AND user_id = NEW.user_id
-      AND status = 'completed'
+      AND status IN ('completed', 'freeze')
     ORDER BY check_in_date DESC
   )
   SELECT COUNT(*) INTO v_current_streak
   FROM consecutive_completed
   WHERE grp = (SELECT MAX(grp) FROM consecutive_completed);
 
-  -- Calculate best streak
+  -- Calculate best streak (consecutive completed OR freeze days)
   WITH streaks AS (
     SELECT
       check_in_date,
@@ -232,7 +234,7 @@ BEGIN
   streak_counts AS (
     SELECT COUNT(*) as streak_length
     FROM streaks
-    WHERE status = 'completed'
+    WHERE status IN ('completed', 'freeze')
     GROUP BY streak_group
   )
   SELECT COALESCE(MAX(streak_length), 0) INTO v_best_streak
@@ -244,7 +246,7 @@ BEGIN
   WHERE challenge_id = NEW.challenge_id
     AND user_id = NEW.user_id;
 
-  -- Calculate completion rate
+  -- Calculate completion rate (only completed days count, not freeze days)
   IF v_challenge_days > 0 THEN
     v_completion_rate := (v_total_completions::float / v_challenge_days::float) * 100;
   END IF;

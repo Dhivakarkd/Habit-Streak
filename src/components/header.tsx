@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 import {
   Flame,
   LogOut,
@@ -32,11 +33,38 @@ export function Header() {
   const router = useRouter();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   // Refresh roles when component mounts to get latest admin status
   React.useEffect(() => {
     refreshRoles();
   }, []);
+
+  // Fetch user profile from database
+  useEffect(() => {
+    if (!user?.id) {
+      setUserProfile(null);
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, username, display_name, email')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && data) {
+          setUserProfile(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.id]);
 
   const handleLogout = async () => {
     try {
@@ -55,70 +83,71 @@ export function Header() {
     }
   };
 
-  const displayName = user?.user_metadata?.username || user?.email || 'User';
+  const displayName = userProfile?.display_name || userProfile?.username || user?.email || 'User';
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center gap-2 md:gap-4 border-b bg-background/95 backdrop-blur-sm px-3 md:px-6 support-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center gap-1 sm:gap-2 md:gap-4 border-b bg-background/95 backdrop-blur-sm px-2 sm:px-3 md:px-6 support-[backdrop-filter]:bg-background/60">
       <nav className="flex w-full items-center justify-between">
         {/* Logo */}
         <motion.div whileHover={{ scale: 1.05 }}>
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 flex-shrink-0"
+            className="flex items-center gap-1 sm:gap-2 flex-shrink-0"
           >
-            <Flame className="h-6 w-6 md:h-7 md:w-7 text-primary flex-shrink-0" />
+            <Flame className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-primary flex-shrink-0" />
             <span className="sr-only">Habit Streak</span>
-            <span className="hidden font-bold sm:inline-block text-sm md:text-base">Habit Streak</span>
+            <span className="hidden font-bold sm:inline-block text-xs md:text-sm lg:text-base">Habit Streak</span>
           </Link>
         </motion.div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6 ml-6">
+        <div className="hidden md:flex items-center gap-4 lg:gap-6 ml-6">
           <Link
             href="/dashboard"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground py-2"
+            className="text-xs lg:text-sm text-muted-foreground transition-colors hover:text-foreground py-2"
           >
             Dashboard
           </Link>
           <Link
             href="/challenges"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground py-2"
+            className="text-xs lg:text-sm text-muted-foreground transition-colors hover:text-foreground py-2"
           >
             Challenges
           </Link>
         </div>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-2 md:gap-4 ml-auto">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto">
           {/* Create Button */}
           <Button
             variant="ghost"
             size="sm"
-            className="h-10 md:h-10 text-xs md:text-sm min-w-[40px] md:w-auto"
+            className="h-9 md:h-10 text-xs md:text-sm min-w-fit px-2 md:px-3"
             asChild
           >
-            <Link href="/challenges/new" className="flex items-center gap-1 md:gap-2">
+            <Link href="/challenges/new" className="flex items-center gap-1 md:gap-2 whitespace-nowrap">
               <span className="hidden sm:inline">+</span>
               <span className="hidden md:inline">New</span>
+              <span className="sm:hidden">New</span>
             </Link>
           </Button>
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full h-10 w-10 flex-shrink-0 min-h-[44px]">
+              <Button variant="secondary" size="icon" className="rounded-full h-9 w-9 md:h-10 md:w-10 flex-shrink-0 min-h-[44px] min-w-[44px]">
                 <Avatar className="h-full w-full">
-                  <AvatarFallback className="text-sm md:text-base">{initials}</AvatarFallback>
+                  <AvatarFallback className="text-xs md:text-sm">{initials}</AvatarFallback>
                 </Avatar>
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 md:w-64">
-              <DropdownMenuLabel className="text-xs md:text-sm">
+            <DropdownMenuContent align="end" className="w-48 md:w-56 lg:w-64">
+              <DropdownMenuLabel className="text-xs md:text-sm truncate">
                 {displayName}
-                {isSuperAdmin && <span className="ml-2 text-xs text-red-600">Super Admin</span>}
-                {isAdmin && !isSuperAdmin && <span className="ml-2 text-xs text-blue-600">Admin</span>}
+                {isSuperAdmin && <span className="ml-1 text-xs text-red-600 block">Super Admin</span>}
+                {isAdmin && !isSuperAdmin && <span className="ml-1 text-xs text-blue-600 block">Admin</span>}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-xs md:text-sm">

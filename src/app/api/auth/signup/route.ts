@@ -49,6 +49,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       options: {
         data: {
           username,
+          display_name: username,
         },
         emailRedirectTo: `${new URL(request.url).origin}/dashboard`,
       },

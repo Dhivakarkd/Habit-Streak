@@ -131,18 +131,18 @@ export function ChallengeCard({
       whileHover={{ y: -4 }}
     >
       <Card className={cn('flex h-full flex-col shadow-sm hover:shadow-md transition-shadow', className)}>
-        <CardHeader className="pb-3 md:pb-4">
+        <CardHeader className="pb-2 md:pb-3 lg:pb-4">
           <div className="flex items-start justify-between gap-2 md:gap-3">
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-base md:text-lg font-semibold truncate">{name}</CardTitle>
-              <CardDescription className="text-xs md:text-sm mt-1">{category}</CardDescription>
+              <CardTitle className="text-sm md:text-base font-semibold truncate">{name}</CardTitle>
+              <CardDescription className="text-xs md:text-sm mt-1 truncate">{category}</CardDescription>
             </div>
-            <div className={`flex-shrink-0 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-lg bg-secondary/50 ${getIconColor(categoryIconType[category] || 'primary')}`}>
-              <Icon className="h-5 w-5 md:h-6 md:w-6" />
+            <div className={`flex-shrink-0 flex h-9 w-9 md:h-10 md:w-10 lg:h-12 lg:w-12 items-center justify-center rounded-lg bg-secondary/50 ${getIconColor(categoryIconType[category] || 'primary')}`}>
+              <Icon className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-grow pb-3 md:pb-4 space-y-3 md:space-y-4">
+        <CardContent className="flex-grow pb-2 md:pb-3 lg:pb-4 space-y-2 md:space-y-3 lg:space-y-4">
           <StreakDisplay
             currentStreak={challenge.currentStreak || 0}
             bestStreak={challenge.bestStreak || 0}
@@ -154,31 +154,31 @@ export function ChallengeCard({
                   {members.slice(0, 3).map((member) => (
                     <Tooltip key={member.id}>
                       <TooltipTrigger asChild>
-                        <Avatar className="h-7 w-7 md:h-8 md:w-8 border-2 border-background">
+                        <Avatar className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 border-2 border-background">
                           <AvatarImage src={member.avatarUrl} alt={member.username} />
-                          <AvatarFallback>{member.username.charAt(0).toUpperCase()}</AvatarFallback>
+                          <AvatarFallback className="text-xs">{member.username.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{member.username}</p>
+                        <p className="text-xs md:text-sm">{member.username}</p>
                       </TooltipContent>
                     </Tooltip>
                   ))}
                 </TooltipProvider>
               </div>
               {members.length > 3 && (
-                <span className="text-muted-foreground">+{members.length - 3}</span>
+                <span className="text-xs text-muted-foreground">+{members.length - 3}</span>
               )}
             </div>
           </div>
         </CardContent>
-        <CardFooter className="pt-2 md:pt-3">
+        <CardFooter className="pt-1 md:pt-2 lg:pt-3">
           {isMember ? (
             <Button asChild className="w-full min-h-[44px]" size="sm">
               <Link href={`/challenges/${id}`}>
                 {variant === 'dashboard' ? (
                   <>
-                    View Challenge <ArrowRight className="ml-2 h-4 w-4" />
+                    View Challenge <ArrowRight className="ml-2 h-3 w-3 md:h-4 md:w-4" />
                   </>
                 ) : (
                   'Go to Challenge'

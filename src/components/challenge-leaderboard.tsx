@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LeaderboardEntry } from '@/lib/types';
+import { format } from 'date-fns';
 
 type LeaderboardTab = 'streaks' | 'missed-days';
 
@@ -19,6 +21,12 @@ export function ChallengeLeaderboard({ challengeId }: ChallengeLeaderboardProps)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for prefers-reduced-motion for accessibility
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
 
   // Fetch leaderboard data
   const fetchLeaderboard = async (tab: LeaderboardTab) => {
@@ -70,10 +78,82 @@ export function ChallengeLeaderboard({ challengeId }: ChallengeLeaderboardProps)
     return activeTab === 'streaks' ? entry.currentStreak : entry.missedDays;
   };
 
+  const AchievementsPopover = ({ achievements }: { achievements?: any[] }) => {
+    if (!achievements || achievements.length === 0) {
+      return null;
+    }
+
+    if (achievements.length <= 2) {
+      return (
+        <div className="flex gap-1 mt-1">
+          {achievements.map((achievement, idx) => (
+            <Badge key={idx} variant="outline" className="text-xs py-0">
+              {achievement.icon || '🏆'}
+            </Badge>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex gap-1 mt-1">
+        {achievements.slice(0, 2).map((achievement, idx) => (
+          <Badge key={idx} variant="outline" className="text-xs py-0">
+            {achievement.icon || '🏆'}
+          </Badge>
+        ))}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Badge 
+              variant="outline" 
+              className="text-xs py-0 cursor-pointer hover:bg-muted transition-colors"
+            >
+              +{achievements.length - 2}
+            </Badge>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-3">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm">All Achievements ({achievements.length})</h4>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {achievements.map((achievement, idx) => (
+                  <div 
+                    key={idx} 
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg flex-shrink-0 mt-0.5">
+                        {achievement.icon || '🏆'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm leading-tight">
+                          {achievement.name}
+                        </p>
+                        {achievement.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            {achievement.description}
+                          </p>
+                        )}
+                        {achievement.earnedAt && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Earned: {format(new Date(achievement.earnedAt), 'MMM d, yyyy')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle className="text-lg">Leaderboard</CardTitle>
+        <CardTitle className="text-base md:text-lg">Leaderboard</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as LeaderboardTab)}>
@@ -137,25 +217,12 @@ export function ChallengeLeaderboard({ challengeId }: ChallengeLeaderboardProps)
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col">
-                              <span className="font-medium">{entry.username}</span>
-                              {entry.achievements && entry.achievements.length > 0 && (
-                                <div className="flex gap-1 mt-1">
-                                  {entry.achievements.slice(0, 2).map((achievement, idx) => (
-                                    <Badge key={idx} variant="outline" className="text-xs py-0">
-                                      {achievement.icon || '🏆'}
-                                    </Badge>
-                                  ))}
-                                  {entry.achievements.length > 2 && (
-                                    <Badge variant="outline" className="text-xs py-0">
-                                      +{entry.achievements.length - 2}
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
+                              <span className="font-medium text-sm">{entry.username}</span>
+                              <AchievementsPopover achievements={entry.achievements} />
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">
+                        <TableCell className="text-right font-bold text-lg">
                           {getMetricValue(entry) ?? 0}
                         </TableCell>
                       </TableRow>

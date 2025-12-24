@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Header } from '@/components/header';
 import { ChallengeCard } from '@/components/challenge-card';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import { Challenge } from '@/lib/types';
 import { getCachedData, revalidateCache } from '@/lib/cache';
 
@@ -16,12 +17,39 @@ export default function Dashboard() {
   const router = useRouter();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loadingChallenges, setLoadingChallenges] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
     }
   }, [user, loading, router]);
+
+  // Fetch user profile from database
+  useEffect(() => {
+    if (!user?.id) {
+      setUserProfile(null);
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, username, display_name, email')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && data) {
+          setUserProfile(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchUserChallenges = async () => {
@@ -121,7 +149,7 @@ export default function Dashboard() {
     }
   };
 
-  const displayName = user?.user_metadata?.username || user?.email || 'User';
+  const displayName = userProfile?.display_name || userProfile?.username || user?.email?.split('@')[0] || 'User';
 
   if (loading) {
     return (
@@ -138,16 +166,18 @@ export default function Dashboard() {
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6 lg:gap-8 lg:p-8">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1 md:space-y-2">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">
+            <h1 className="text-lg md:text-2xl lg:text-3xl font-bold">
               Welcome back, {displayName}!
             </h1>
             <p className="text-xs md:text-sm text-muted-foreground">Here are your active challenges.</p>
           </div>
-          <Button asChild className="w-full md:w-auto min-h-[44px]" size="sm">
+          <Button asChild className="w-full sm:w-auto min-h-[44px]" size="sm" variant="default">
             <Link href="/challenges/new">
-              <PlusCircle className="mr-2 h-4 w-4" /> New Challenge
+              <PlusCircle className="mr-1 md:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">New Challenge</span>
+              <span className="sm:hidden">New</span>
             </Link>
           </Button>
         </div>
@@ -166,9 +196,14 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-3 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="flex flex-wrap gap-3 md:gap-4 lg:gap-6">
             {challenges.map((challenge) => (
-              <ChallengeCard key={challenge.id} challenge={challenge} isMember={true} variant="dashboard" />
+              <div
+                key={challenge.id}
+                className="w-full basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4 min-w-0"
+              >
+                <ChallengeCard challenge={challenge} isMember={true} variant="dashboard" />
+              </div>
             ))}
           </div>
         )}
