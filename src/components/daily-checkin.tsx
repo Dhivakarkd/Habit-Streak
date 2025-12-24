@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Check, X, PartyPopper } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -106,67 +107,86 @@ export function DailyCheckin({ challengeId, onCheckInSuccess, todayStatus }: { c
     switch (status) {
       case 'completed':
         return (
-          <div className="flex flex-col items-center gap-4 text-center animate-in fade-in zoom-in-95">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <PartyPopper className="h-8 w-8 text-green-600" />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="flex flex-col items-center gap-3 md:gap-4 text-center"
+          >
+            <div className="flex h-16 w-16 md:h-20 md:w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30">
+              <PartyPopper className="h-8 w-8 md:h-10 md:w-10 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <p className="text-lg font-medium text-green-700">
+            <p className="text-base md:text-lg font-semibold text-emerald-700 dark:text-emerald-400">
               Great job! You're on fire!
             </p>
             <p className="text-sm text-muted-foreground">
               Come back tomorrow to keep the streak alive.
             </p>
-          </div>
+          </motion.div>
         );
       case 'missed':
         return (
-          <div className="flex flex-col items-center gap-2 text-center animate-in fade-in zoom-in-95">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-              <X className="h-8 w-8 text-red-600" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="flex flex-col items-center gap-3 md:gap-4 text-center"
+          >
+            <div className="flex h-16 w-16 md:h-20 md:w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30">
+              <X className="h-8 w-8 md:h-10 md:w-10 text-red-600 dark:text-red-400" />
             </div>
-            <p className="text-lg font-medium text-red-700">
+            <p className="text-base md:text-lg font-semibold text-red-700 dark:text-red-400">
               It happens. Let's get back on track tomorrow.
             </p>
-          </div>
+          </motion.div>
         );
       case 'pending':
       default:
         return (
-          <div className="space-y-6">
-            <p className="text-center text-lg text-muted-foreground">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4 md:space-y-6"
+          >
+            <p className="text-center text-base md:text-lg text-muted-foreground">
               Did you complete your goal today?
             </p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Button
-                size="lg"
-                className="h-20 w-full transform bg-green-500 text-lg text-white transition hover:scale-105 hover:bg-green-600"
-                onClick={() => handleCheckin('completed')}
-                disabled={loading}
-              >
-                <Check className="mr-2 h-8 w-8" /> {loading ? 'Saving...' : 'Yes, I did!'}
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-20 w-full transform border-2 text-lg transition hover:scale-105"
-                onClick={() => handleCheckin('missed')}
-                disabled={loading}
-              >
-                <X className="mr-2 h-8 w-8" /> {loading ? 'Saving...' : 'Not today'}
-              </Button>
+            <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="lg"
+                  className="h-16 md:h-20 w-full text-base md:text-lg bg-emerald-500 hover:bg-emerald-600 text-white min-h-[44px]"
+                  onClick={() => handleCheckin('completed')}
+                  disabled={loading}
+                >
+                  <Check className="mr-2 h-6 w-6 md:h-8 md:w-8" /> {loading ? 'Saving...' : 'Yes, I did!'}
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-16 md:h-20 w-full border-2 text-base md:text-lg min-h-[44px]"
+                  onClick={() => handleCheckin('missed')}
+                  disabled={loading}
+                >
+                  <X className="mr-2 h-6 w-6 md:h-8 md:w-8" /> {loading ? 'Saving...' : 'Not today'}
+                </Button>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         );
     }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Daily Check-in</CardTitle>
-        <CardDescription>{today}</CardDescription>
+    <Card className="w-full shadow-sm">
+      <CardHeader className="pb-3 md:pb-4">
+        <CardTitle className="text-lg md:text-xl">Daily Check-in</CardTitle>
+        <CardDescription className="text-xs md:text-sm">{today}</CardDescription>
       </CardHeader>
-      <CardContent>{renderContent()}</CardContent>
+      <CardContent className="pt-2 md:pt-3">{renderContent()}</CardContent>
     </Card>
   );
 }

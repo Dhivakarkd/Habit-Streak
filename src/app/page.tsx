@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Flame } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -113,84 +114,122 @@ export default function LoginPage() {
   const handleSubmit = mode === 'signin' ? handleSignIn : handleSignUp;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="absolute inset-0 -z-10 h-full w-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"></div>
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center">
-          <div className="mb-4 flex justify-center">
-            <Flame className="h-12 w-12 text-primary" />
-          </div>
-          <CardTitle className="text-3xl font-bold">Habit Streak</CardTitle>
-          <CardDescription>
-            {mode === 'signin'
-              ? 'Sign in to track your habits and build your streak.'
-              : 'Create an account to start tracking your habits.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className={mode === 'signup' ? 'space-y-2' : 'hidden'}>
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                placeholder="john_doe"
-                required={mode === 'signup'}
-                value={formData.username}
-                onChange={handleInputChange}
-                disabled={mode === 'signin'}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder={mode === 'signup' ? 'Must be 8+ chars with uppercase, lowercase, number' : ''}
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-              />
-              {mode === 'signup' && (
-                <p className="text-xs text-muted-foreground">
-                  Must be 8+ characters with uppercase, lowercase, and numbers
-                </p>
-              )}
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-center text-sm">
-          <p>
-            {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-            <button
-              onClick={() => {
-                setMode(mode === 'signin' ? 'signup' : 'signin');
-                setFormData({ username: '', email: '', password: '' });
-              }}
-              className="font-semibold text-primary hover:underline"
+    <main className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-8 md:py-12">
+      {/* Background grid pattern */}
+      <div className="absolute inset-0 -z-10 h-full w-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#374151_1px,transparent_1px)] [background-size:16px_16px] opacity-40"></div>
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="shadow-lg border border-border/50">
+          <CardHeader className="text-center pb-4 md:pb-6">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 25, delay: 0.2 }}
+              className="mb-3 md:mb-4 flex justify-center"
             >
-              {mode === 'signin' ? 'Sign Up' : 'Sign In'}
-            </button>
-          </p>
-        </CardFooter>
-      </Card>
+              <Flame className="h-10 w-10 md:h-12 md:w-12 text-primary animate-pulse-soft" />
+            </motion.div>
+            <CardTitle className="text-2xl md:text-3xl font-bold">Habit Streak</CardTitle>
+            <CardDescription className="text-sm md:text-base mt-2">
+              {mode === 'signin'
+                ? 'Sign in to track your habits and build your streak.'
+                : 'Create an account to start tracking your habits.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <motion.form 
+              onSubmit={handleSubmit} 
+              className="space-y-3 md:space-y-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              {mode === 'signup' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2"
+                >
+                  <Label htmlFor="username" className="text-sm md:text-base">Username</Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    placeholder="john_doe"
+                    required={mode === 'signup'}
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    disabled={mode === 'signin'}
+                    className="min-h-[44px] text-sm md:text-base"
+                  />
+                </motion.div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm md:text-base">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="min-h-[44px] text-sm md:text-base"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm md:text-base">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder={mode === 'signup' ? 'Must be 8+ chars with uppercase, lowercase, number' : ''}
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="min-h-[44px] text-sm md:text-base"
+                />
+                {mode === 'signup' && (
+                  <p className="text-xs text-muted-foreground">
+                    Must be 8+ characters with uppercase, lowercase, and numbers
+                  </p>
+                )}
+              </div>
+              <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                <Button 
+                  type="submit" 
+                  className="w-full min-h-[44px] text-sm md:text-base" 
+                  disabled={loading}
+                >
+                  {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+                </Button>
+              </motion.div>
+            </motion.form>
+          </CardContent>
+          <CardFooter className="flex justify-center text-xs md:text-sm pt-3 md:pt-4">
+            <p>
+              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              <motion.button
+                onClick={() => {
+                  setMode(mode === 'signin' ? 'signup' : 'signin');
+                  setFormData({ username: '', email: '', password: '' });
+                }}
+                className="font-semibold text-primary hover:underline inline-block"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {mode === 'signin' ? 'Sign Up' : 'Sign In'}
+              </motion.button>
+            </p>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </main>
   );
 }

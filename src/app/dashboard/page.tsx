@@ -137,15 +137,15 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold leading-none tracking-tight">
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6 lg:gap-8 lg:p-8">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1 md:space-y-2">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">
               Welcome back, {displayName}!
             </h1>
-            <p className="text-sm text-muted-foreground">Here are your active challenges.</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Here are your active challenges.</p>
           </div>
-          <Button asChild>
+          <Button asChild className="w-full md:w-auto min-h-[44px]" size="sm">
             <Link href="/challenges/new">
               <PlusCircle className="mr-2 h-4 w-4" /> New Challenge
             </Link>
@@ -153,20 +153,20 @@ export default function Dashboard() {
         </div>
 
         {loadingChallenges ? (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">Loading challenges...</p>
+          <div className="flex items-center justify-center py-12 md:py-16">
+            <p className="text-sm md:text-base text-muted-foreground">Loading challenges...</p>
           </div>
         ) : challenges.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <p className="text-muted-foreground">No challenges joined yet.</p>
-              <Link href="/challenges" className="text-primary hover:underline">
+          <div className="flex items-center justify-center py-12 md:py-16">
+            <div className="text-center space-y-3">
+              <p className="text-sm md:text-base text-muted-foreground">No challenges joined yet.</p>
+              <Link href="/challenges" className="text-primary hover:underline text-sm md:text-base inline-block">
                 Browse available challenges
               </Link>
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-3 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {challenges.map((challenge) => (
               <ChallengeCard key={challenge.id} challenge={challenge} isMember={true} variant="dashboard" />
             ))}

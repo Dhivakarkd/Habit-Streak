@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { ArrowRight, Dumbbell, Book, Leaf, Code, Palette } from 'lucide-react';
 import type { Challenge } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { getIconColor } from '@/lib/icon-config';
 
 type ChallengeCardProps = {
   challenge: Challenge;
@@ -40,6 +42,14 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
   'Wellness': Leaf,
   'Productivity': Code,
   'Creative': Palette,
+};
+
+const categoryIconType: Record<string, 'streak' | 'primary' | 'secondary' | 'achievement'> = {
+  'Fitness': 'streak',
+  'Learning': 'primary',
+  'Wellness': 'secondary',
+  'Productivity': 'primary',
+  'Creative': 'achievement',
 };
 
 export function ChallengeCard({
@@ -114,72 +124,80 @@ export function ChallengeCard({
   };
 
   return (
-    <Card className={cn('flex h-full flex-col shadow-md transition-shadow hover:shadow-xl', className)}>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-xl">{name}</CardTitle>
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-            <Icon className="h-6 w-6 text-muted-foreground" />
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ y: -4 }}
+    >
+      <Card className={cn('flex h-full flex-col shadow-sm hover:shadow-md transition-shadow', className)}>
+        <CardHeader className="pb-3 md:pb-4">
+          <div className="flex items-start justify-between gap-2 md:gap-3">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-base md:text-lg font-semibold truncate">{name}</CardTitle>
+              <CardDescription className="text-xs md:text-sm mt-1">{category}</CardDescription>
+            </div>
+            <div className={`flex-shrink-0 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-lg bg-secondary/50 ${getIconColor(categoryIconType[category] || 'primary')}`}>
+              <Icon className="h-5 w-5 md:h-6 md:w-6" />
+            </div>
           </div>
-        </div>
-        <CardDescription>{category}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        <StreakDisplay
-          currentStreak={challenge.currentStreak || 0}
-          bestStreak={challenge.bestStreak || 0}
-        />
-        <div className="mt-4 flex items-center space-x-2">
-          <div className="flex -space-x-2 overflow-hidden">
-            <TooltipProvider>
-              {members.slice(0, 3).map((member) => (
-                <Tooltip key={member.id}>
-                  <TooltipTrigger asChild>
-                    <Avatar className="h-8 w-8 border-2 border-background">
-                      <AvatarImage src={member.avatarUrl} alt={member.username} />
-                      <AvatarFallback>{member.username.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{member.username}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </TooltipProvider>
-          </div>
-          {members.length > 3 && (
-            <span className="text-xs text-muted-foreground">
-              +{members.length - 3} others
-            </span>
-          )}
-        </div>
-      </CardContent>
-      <CardFooter>
-        {isMember ? (
-          // User is a member - show View Challenge button
-          <Button asChild className="w-full">
-            <Link href={`/challenges/${id}`}>
-              {variant === 'dashboard' ? (
-                <>
-                  View Challenge <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              ) : (
-                'Go to Challenge'
+        </CardHeader>
+        <CardContent className="flex-grow pb-3 md:pb-4 space-y-3 md:space-y-4">
+          <StreakDisplay
+            currentStreak={challenge.currentStreak || 0}
+            bestStreak={challenge.bestStreak || 0}
+          />
+          <div className="flex items-center justify-between text-xs md:text-sm">
+            <div className="flex items-center space-x-1 md:space-x-2">
+              <div className="flex -space-x-2 overflow-hidden">
+                <TooltipProvider>
+                  {members.slice(0, 3).map((member) => (
+                    <Tooltip key={member.id}>
+                      <TooltipTrigger asChild>
+                        <Avatar className="h-7 w-7 md:h-8 md:w-8 border-2 border-background">
+                          <AvatarImage src={member.avatarUrl} alt={member.username} />
+                          <AvatarFallback>{member.username.charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{member.username}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </TooltipProvider>
+              </div>
+              {members.length > 3 && (
+                <span className="text-muted-foreground">+{members.length - 3}</span>
               )}
-            </Link>
-          </Button>
-        ) : (
-          // User is not a member - show Join button
-          <Button 
-            onClick={handleJoin}
-            disabled={joiningChallenge}
-            className="w-full"
-            variant={variant === 'dashboard' ? 'default' : 'outline'}
-          >
-            {joiningChallenge ? 'Joining...' : 'Join Challenge'}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="pt-2 md:pt-3">
+          {isMember ? (
+            <Button asChild className="w-full min-h-[44px]" size="sm">
+              <Link href={`/challenges/${id}`}>
+                {variant === 'dashboard' ? (
+                  <>
+                    View Challenge <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                ) : (
+                  'Go to Challenge'
+                )}
+              </Link>
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleJoin}
+              disabled={joiningChallenge}
+              className="w-full min-h-[44px]"
+              size="sm"
+              variant={variant === 'dashboard' ? 'default' : 'outline'}
+            >
+              {joiningChallenge ? 'Joining...' : 'Join Challenge'}
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 }
