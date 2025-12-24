@@ -7,17 +7,46 @@ import { clearAllCache } from './cache';
 
 export type AuthContextType = {
   user: SupabaseUser | null;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
   loading: boolean;
   signUp: (email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
+  refreshRoles: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Helper to fetch user role info from database
+  const fetchUserRoles = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('is_admin, is_super_admin')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('[AUTH] Error fetching user roles:', error);
+        setIsAdmin(false);
+        setIsSuperAdmin(false);
+      } else if (data) {
+        setIsAdmin(data.is_admin || false);
+        setIsSuperAdmin(data.is_super_admin || false);
+      }
+    } catch (error) {
+      console.error('[AUTH] Exception fetching user roles:', error);
+      setIsAdmin(false);
+      setIsSuperAdmin(false);
+    }
+  };
 
   // Initialize auth state
   useEffect(() => {
@@ -25,6 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const currentUser = await getCurrentUser();
         setUser(currentUser);
+        if (currentUser?.id) {
+          await fetchUserRoles(currentUser.id);
+        }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
       } finally {
@@ -39,6 +71,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user || null);
+      if (session?.user?.id) {
+        await fetchUserRoles(session.user.id);
+      } else {
+        setIsAdmin(false);
+        setIsSuperAdmin(false);
+      }
     });
 
     return () => {
@@ -133,8 +171,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshRoles = async () => {
+    if (user?.id) {
+      await fetchUserRoles(user.id);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, isAdmin, isSuperAdmin, loading, signUp, signIn, signOut, refreshRoles }}>
       {children}
     </AuthContext.Provider>
   );

@@ -39,6 +39,7 @@ CREATE TABLE users (
   avatar_url text,
   bio text,
   is_admin boolean DEFAULT false,
+  is_super_admin boolean DEFAULT false,
   can_create_challenges boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
@@ -56,6 +57,7 @@ CREATE TABLE challenges (
   description text NOT NULL,
   category text NOT NULL CHECK (category IN ('Fitness', 'Wellness', 'Productivity', 'Learning', 'Creative')),
   created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  is_archived boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
 );

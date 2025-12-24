@@ -139,9 +139,16 @@ export async function GET(
       members: members
         ? members.map((m: any) => ({
             id: m.users.id,
+            email: m.users.email || '',
             username: m.users.username,
             displayName: m.users.display_name,
             avatarUrl: m.users.avatar_url,
+            bio: m.users.bio,
+            isAdmin: m.users.is_admin || false,
+            isSuperAdmin: m.users.is_super_admin || false,
+            canCreateChallenges: m.users.can_create_challenges || false,
+            createdAt: m.users.created_at || new Date().toISOString(),
+            updatedAt: m.users.updated_at || new Date().toISOString(),
           }))
         : [],
       checkins: todayCheckins

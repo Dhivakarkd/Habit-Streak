@@ -1,12 +1,20 @@
-import type { User, Challenge } from '@/lib/types';
+import type { User, Challenge, Checkin } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Dumbbell, BookOpen, BrainCircuit, Brush, Leaf } from 'lucide-react';
 import { subDays, format } from 'date-fns';
 
 const users: User[] = PlaceHolderImages.map((img, index) => ({
   id: `user-${index + 1}`,
-  name: `User ${index + 1}`,
+  email: `user${index + 1}@example.com`,
+  username: `User ${index + 1}`,
+  displayName: `User ${index + 1}`,
   avatarUrl: img.imageUrl,
+  bio: undefined,
+  isAdmin: false,
+  isSuperAdmin: false,
+  canCreateChallenges: false,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 }));
 
 // A function to get a random subset of users
@@ -15,23 +23,31 @@ const getRandomUsers = (count: number): User[] => {
   return shuffled.slice(0, count);
 };
 
-const generateCheckins = (members: User[], days: number, completionRate: number) => {
-  const checkins: { userId: string; date: string; status: 'completed' | 'missed' | 'pending' }[] = [];
+const generateCheckins = (members: User[], days: number, completionRate: number, challengeId: string) => {
+  const checkins: Checkin[] = [];
   const today = new Date();
+  let counter = 0;
   for (let i = 0; i < days; i++) {
     const date = subDays(today, i);
     for (const member of members) {
+      counter++;
       if (i === 0) { // Today
         checkins.push({
+          id: `checkin-${challengeId}-${member.id}-${counter}`,
+          challengeId,
           userId: member.id,
           date: format(date, 'yyyy-MM-dd'),
           status: 'pending',
+          createdAt: new Date().toISOString(),
         });
       } else {
         checkins.push({
+          id: `checkin-${challengeId}-${member.id}-${counter}`,
+          challengeId,
           userId: member.id,
           date: format(date, 'yyyy-MM-dd'),
           status: Math.random() < completionRate ? 'completed' : 'missed',
+          createdAt: new Date().toISOString(),
         });
       }
     }
@@ -51,10 +67,10 @@ export const mockChallenges: Challenge[] = [
     description: 'Commit to 30 minutes of exercise every day for 30 days. Any activity counts!',
     category: 'Fitness',
     icon: Dumbbell,
-    currentStreak: 12,
-    bestStreak: 25,
+    createdBy: null,
+    createdAt: new Date().toISOString(),
     members: challengeMembers1,
-    checkins: generateCheckins(challengeMembers1, 30, 0.8),
+    checkins: generateCheckins(challengeMembers1, 30, 0.8, '1'),
   },
   {
     id: '2',
@@ -62,10 +78,10 @@ export const mockChallenges: Challenge[] = [
     description: 'Read at least 20 pages of a book every day. Expand your mind, one page at a time.',
     category: 'Learning',
     icon: BookOpen,
-    currentStreak: 5,
-    bestStreak: 10,
+    createdBy: null,
+    createdAt: new Date().toISOString(),
     members: challengeMembers2,
-    checkins: generateCheckins(challengeMembers2, 15, 0.7),
+    checkins: generateCheckins(challengeMembers2, 15, 0.7, '2'),
   },
   {
     id: '3',
@@ -73,10 +89,10 @@ export const mockChallenges: Challenge[] = [
     description: 'Practice 10 minutes of meditation or mindfulness each day to reduce stress and improve focus.',
     category: 'Wellness',
     icon: Leaf,
-    currentStreak: 28,
-    bestStreak: 28,
+    createdBy: null,
+    createdAt: new Date().toISOString(),
     members: challengeMembers3,
-    checkins: generateCheckins(challengeMembers3, 40, 0.9),
+    checkins: generateCheckins(challengeMembers3, 40, 0.9, '3'),
   },
   {
     id: '4',
@@ -84,10 +100,10 @@ export const mockChallenges: Challenge[] = [
     description: 'Write code for at least 15 minutes every day. Personal projects, tutorials, or contributions.',
     category: 'Productivity',
     icon: BrainCircuit,
-    currentStreak: 0,
-    bestStreak: 7,
+    createdBy: null,
+    createdAt: new Date().toISOString(),
     members: challengeMembers4,
-    checkins: generateCheckins(challengeMembers4, 10, 0.6),
+    checkins: generateCheckins(challengeMembers4, 10, 0.6, '4'),
   },
 ];
 

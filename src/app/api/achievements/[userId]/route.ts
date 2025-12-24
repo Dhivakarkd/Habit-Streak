@@ -4,10 +4,10 @@ import { ApiResponse, AchievementEarned } from '@/lib/types';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ): Promise<NextResponse<ApiResponse<AchievementEarned[]>>> {
   try {
-    const { userId } = params;
+    const { userId } = await params;
 
     // Verify the user exists
     const { data: user, error: userError } = await supabase

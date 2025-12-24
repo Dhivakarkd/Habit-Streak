@@ -74,7 +74,7 @@ export default function ChallengesPage() {
               
               // Check membership in parallel for faster loading
               await Promise.all(
-                allChallenges.map(async (challenge) => {
+                allChallenges.map(async (challenge: Challenge) => {
                   try {
                     const membershipResponse = await fetch(
                       `/api/challenges/${challenge.id}/membership`,

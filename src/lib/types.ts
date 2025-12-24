@@ -22,6 +22,7 @@ export type User = {
   avatarUrl?: string;
   bio?: string;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   canCreateChallenges: boolean;
   createdAt: string;
   updatedAt: string;
@@ -35,6 +36,7 @@ export type Challenge = {
   category: 'Fitness' | 'Wellness' | 'Productivity' | 'Learning' | 'Creative';
   icon?: React.ComponentType<{ className?: string }>;
   createdBy: string | null; // null for default challenges
+  isArchived?: boolean;
   createdAt: string;
   updatedAt: string;
   currentStreak?: number;

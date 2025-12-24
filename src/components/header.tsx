@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -11,6 +12,8 @@ import {
   PlusCircle,
   LogOut,
   User as UserIcon,
+  Shield,
+  Users,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -25,9 +28,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function Header() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin, isSuperAdmin, refreshRoles } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  // Refresh roles when component mounts to get latest admin status
+  React.useEffect(() => {
+    refreshRoles();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -97,12 +105,33 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {displayName}
+                {isSuperAdmin && <span className="ml-2 text-xs text-red-600">Super Admin</span>}
+                {isAdmin && !isSuperAdmin && <span className="ml-2 text-xs text-blue-600">Admin</span>}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
+              {(isAdmin || isSuperAdmin) && <DropdownMenuSeparator />}
+              {isAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Challenge Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {isSuperAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/users">
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>User Management</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
