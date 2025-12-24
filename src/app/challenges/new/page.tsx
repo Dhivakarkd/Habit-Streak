@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -24,44 +26,120 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/lib/auth-context';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 const challengeFormSchema = z.object({
   name: z.string().min(3, {
     message: 'Challenge name must be at least 3 characters.',
+  }).max(50, {
+    message: 'Challenge name must be at most 50 characters.',
   }),
-  description: z.string().max(280, {
-    message: 'Description cannot be longer than 280 characters.',
-  }).optional(),
+  description: z.string().min(10, {
+    message: 'Description must be at least 10 characters.',
+  }).max(500, {
+    message: 'Description cannot be longer than 500 characters.',
+  }),
   category: z.enum(['Fitness', 'Wellness', 'Productivity', 'Learning', 'Creative']),
-  isPublic: z.boolean().default(true),
+  userIds: z.array(z.string()).default([]),
+  addCreator: z.boolean().default(true),
 });
 
 type ChallengeFormValues = z.infer<typeof challengeFormSchema>;
 
+type User = {
+  id: string;
+  email: string;
+  username: string;
+};
+
 const defaultValues: Partial<ChallengeFormValues> = {
-  isPublic: true,
+  userIds: [],
+  addCreator: true,
 };
 
 export default function NewChallengePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  
   const form = useForm<ChallengeFormValues>({
     resolver: zodResolver(challengeFormSchema),
     defaultValues,
     mode: 'onChange',
   });
 
-  function onSubmit(data: ChallengeFormValues) {
-    console.log(data);
-    toast({
-      title: 'Challenge Created!',
-      description: `Your new challenge "${data.name}" is live.`,
-    });
-    router.push('/dashboard');
+  // Fetch users when component mounts
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users/list');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  async function onSubmit(data: ChallengeFormValues) {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to create a challenge',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/challenges/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': user.id,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create challenge');
+      }
+
+      const result = await response.json();
+
+      toast({
+        title: 'Success!',
+        description: `Challenge "${data.name}" created successfully.`,
+      });
+
+      router.push(`/challenges/${result.data.id}`);
+    } catch (error) {
+      console.error('Error creating challenge:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create challenge',
+        variant: 'destructive',
+      });
+    }
   }
 
   return (
@@ -134,15 +212,83 @@ export default function NewChallengePage() {
                 />
                 <FormField
                   control={form.control}
-                  name="isPublic"
+                  name="userIds"
+                  render={() => (
+                    <FormItem>
+                      <Collapsible className="border rounded-lg">
+                        <CollapsibleTrigger asChild>
+                          <button className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900">
+                            <div>
+                              <FormLabel className="text-base font-semibold cursor-pointer">
+                                Invite Members (Optional)
+                              </FormLabel>
+                              <FormDescription className="mt-1">
+                                Select users to add to this challenge.
+                              </FormDescription>
+                            </div>
+                            <ChevronDown className="h-5 w-5 opacity-50" />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="border-t px-4 py-3">
+                          <div className="space-y-3">
+                            {loadingUsers ? (
+                              <p className="text-sm text-gray-500">Loading users...</p>
+                            ) : users.length === 0 ? (
+                              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                                <p className="text-sm text-blue-800 dark:text-blue-200">
+                                  No other users available yet. You can invite members later after creating the challenge.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="max-h-80 overflow-y-auto space-y-3 border rounded p-3">
+                                {users.map((user) => (
+                                  <FormField
+                                    key={user.id}
+                                    control={form.control}
+                                    name="userIds"
+                                    render={({ field }) => {
+                                      const isChecked = field.value?.includes(user.id) || false;
+                                      return (
+                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                          <FormControl>
+                                            <Checkbox
+                                              checked={isChecked}
+                                              onCheckedChange={(checked) => {
+                                                const newValue = checked
+                                                  ? [...(field.value || []), user.id]
+                                                  : (field.value || []).filter((id) => id !== user.id);
+                                                field.onChange(newValue);
+                                              }}
+                                            />
+                                          </FormControl>
+                                          <FormLabel className="font-normal cursor-pointer">
+                                            {user.username} ({user.email})
+                                          </FormLabel>
+                                        </FormItem>
+                                      );
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="addCreator"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">
-                          Public Challenge
+                          Add Me as Member
                         </FormLabel>
                         <FormDescription>
-                          Allow anyone to discover and join this challenge.
+                          Join this challenge when you create it.
                         </FormDescription>
                       </div>
                       <FormControl>

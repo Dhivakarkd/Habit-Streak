@@ -64,18 +64,22 @@ export function MembersList({ members, checkins }: MembersListProps) {
       <CardContent>
         <ul className="space-y-4">
           <TooltipProvider>
-            {members.map((member) => (
-              <li key={member.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={member.avatarUrl} alt={member.name} />
-                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{member.name}</span>
-                </div>
-                <StatusIcon status={getMemberStatus(member.id)} />
-              </li>
-            ))}
+            {members.map((member) => {
+              const displayName = member.displayName || member.username || 'User';
+              const initial = displayName.charAt(0).toUpperCase();
+              return (
+                <li key={member.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={member.avatarUrl} alt={displayName} />
+                      <AvatarFallback>{initial}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{displayName}</span>
+                  </div>
+                  <StatusIcon status={getMemberStatus(member.id)} />
+                </li>
+              );
+            })}
           </TooltipProvider>
         </ul>
       </CardContent>
