@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { MobileNav } from '@/components/mobile-nav';
 import { AuthProvider } from '@/lib/auth-context';
+import QueryProvider from '@/components/query-provider';
 
 export const metadata: Metadata = {
   title: 'Habit Streak',
@@ -26,8 +27,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased pb-16 md:pb-0">
         <AuthProvider>
-          {children}
-          <MobileNav />
+          <QueryProvider>
+            {children}
+            <MobileNav />
+          </QueryProvider>
         </AuthProvider>
         <Toaster />
       </body>

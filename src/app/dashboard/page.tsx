@@ -9,21 +9,21 @@ import { Header } from '@/components/header';
 import { ChallengeCard } from '@/components/challenge-card';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { Challenge } from '@/lib/types';
-import { getCachedData, revalidateCache } from '@/lib/cache';
+import { ApiResponse, Challenge } from '@/lib/types';
+// cache methods removed
+import { useChallenges } from '@/hooks/use-challenges';
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [loadingChallenges, setLoadingChallenges] = useState(true);
+  const { challenges, isLoading: challengesLoading, invalidateChallenges } = useChallenges();
   const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push('/');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
   // Fetch user profile from database
   useEffect(() => {
@@ -51,107 +51,17 @@ export default function Dashboard() {
     fetchUserProfile();
   }, [user?.id]);
 
-  useEffect(() => {
-    const fetchUserChallenges = async () => {
-      try {
-        if (!user) return;
-        
-        console.log('[DASHBOARD] Fetching user challenges for:', user.id);
-        
-        // Use cache with 5-minute TTL
-        const cacheKey = `challenges:user:${user.id}`;
-        const data = await getCachedData(
-          cacheKey,
-          async () => {
-            const response = await fetch('/api/challenges', {
-              headers: {
-                'X-User-ID': user.id,
-              },
-            });
-            
-            if (response.ok) {
-              const result = await response.json();
-              console.log('[DASHBOARD] Fetched challenges:', result.data?.length);
-              return result.data || [];
-            }
-            throw new Error('Failed to fetch challenges');
-          },
-          5 * 60 * 1000 // 5 minute TTL
-        );
-        
-        setChallenges(data);
-      } catch (error) {
-        console.error('[DASHBOARD] Failed to fetch challenges:', error);
-        setChallenges([]);
-      } finally {
-        setLoadingChallenges(false);
-      }
-    };
-
-    if (user) {
-      fetchUserChallenges();
-    }
-
-    // Listen for challenge joined event
-    const handleChallengeJoined = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      console.log('[DASHBOARD] Challenge joined event received:', customEvent.detail);
-      if (customEvent.detail.userId === user?.id) {
-        refetchChallenges();
-      }
-    };
-
-    window.addEventListener('challengeJoined', handleChallengeJoined);
-
-    return () => {
-      window.removeEventListener('challengeJoined', handleChallengeJoined);
-    };
-  }, [user]);
-
   // Expose refetch function for parent components to revalidate after check-in
+  // We keep this method name for compatibility, but now it uses React Query invalidation
   const refetchChallenges = async () => {
-    if (!user) return;
-    
-    try {
-      // Small delay to allow database trigger to calculate new streaks
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const cacheKey = `challenges:user:${user.id}`;
-      revalidateCache(cacheKey);
-      console.log('[DASHBOARD] Cache invalidated, fetching fresh challenges');
-      setLoadingChallenges(true);
-      
-      // Refetch fresh data
-      const data = await getCachedData(
-        cacheKey,
-        async () => {
-          const response = await fetch('/api/challenges', {
-            headers: {
-              'X-User-ID': user.id,
-            },
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            console.log('[DASHBOARD] Fresh challenges fetched:', result.data?.length);
-            return result.data || [];
-          }
-          throw new Error('Failed to fetch challenges');
-        },
-        5 * 60 * 1000
-      );
-      
-      setChallenges(data);
-    } catch (error) {
-      console.error('[DASHBOARD] Error refetching challenges:', error);
-    } finally {
-      setLoadingChallenges(false);
-    }
+    // Small delay to allow database trigger to calculate new streaks
+    await new Promise(resolve => setTimeout(resolve, 500));
+    invalidateChallenges();
   };
 
   const displayName = userProfile?.display_name || userProfile?.username || user?.email?.split('@')[0] || 'User';
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <Header />
@@ -182,7 +92,7 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {loadingChallenges ? (
+        {challengesLoading ? (
           <div className="flex items-center justify-center py-12 md:py-16">
             <p className="text-sm md:text-base text-muted-foreground">Loading challenges...</p>
           </div>
@@ -197,7 +107,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="flex flex-wrap gap-3 md:gap-4 lg:gap-6">
-            {challenges.map((challenge) => (
+            {challenges.map((challenge: Challenge) => (
               <div
                 key={challenge.id}
                 className="w-full basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4 min-w-0"

@@ -28,31 +28,21 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Check for X-User-ID header first (priority)
-    let userId = request.headers.get('X-User-ID');
-    console.log('[CHALLENGES API] User ID from header:', userId || 'none');
+    // Authenticate user via Supabase Auth
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    // Fallback to cookie-based auth
-    if (!userId) {
-      const token = request.cookies.get('sb-access-token')?.value;
-      console.log('[CHALLENGES API] Token from cookies:', token ? 'present' : 'missing');
-
-      if (token) {
-        // Set the auth header so Supabase knows who we are
-        supabase.auth.setSession({
-          access_token: token,
-          refresh_token: request.cookies.get('sb-refresh-token')?.value || '',
-        } as any);
-      }
-
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      console.log('[CHALLENGES API] User from session:', user?.id || 'none');
-      userId = user?.id || null;
+    if (authError || !user) {
+      console.log('[CHALLENGES API] Unauthorized access attempt');
+      // If no valid session, we can still show public challenges if showAll is true,
+      // but we won't have a userId.
+      // However, for strict security, if the client is trying to get user-specific data, we should probably fail or handle it carefully.
     }
+
+    const userId = user?.id || null;
+    console.log('[CHALLENGES API] Authenticated User ID:', userId || 'none');
 
     // If showAll=false (default) and user exists, return only user's joined challenges with streaks
     if (!showAll && userId) {
