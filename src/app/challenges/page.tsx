@@ -17,6 +17,7 @@ export default function ChallengesPage() {
   const router = useRouter();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [filteredChallenges, setFilteredChallenges] = useState<Challenge[]>([]);
+  // map not strictly needed if we trust the API, but useful for optimistic updates
   const [membershipMap, setMembershipMap] = useState<Record<string, boolean>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingChallenges, setLoadingChallenges] = useState(true);
@@ -28,78 +29,24 @@ export default function ChallengesPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    const fetchChallengesAndMembership = async () => {
+    const fetchChallenges = async () => {
       try {
         console.log('[CHALLENGES PAGE] Fetching all challenges...');
         
-        // Use cache with 5-minute TTL for all challenges list
-        const cacheKey = `challenges:all:user:${user?.id || 'anonymous'}`;
-        const allChallenges = await getCachedData(
-          cacheKey,
-          async () => {
-            // Pass all=true to get all challenges, and include user ID for streak data
-            const response = await fetch('/api/challenges?all=true', {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(user && { 'X-User-ID': user.id }),
-              },
-            });
-            console.log('[CHALLENGES PAGE] Response status:', response.status);
-            if (response.ok) {
-              const data = await response.json();
-              console.log('[CHALLENGES PAGE] Data received:', data.data?.length, 'challenges');
-              return data.data || [];
-            } else {
-              console.error('[CHALLENGES PAGE] Response not ok:', response.statusText);
-              const errorData = await response.json();
-              console.error('[CHALLENGES PAGE] Error data:', errorData);
-              throw new Error('Failed to fetch challenges');
-            }
+        // Pass all=true to get all challenges, and include user ID for membership status
+        const response = await fetch('/api/challenges?all=true', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(user && { 'X-User-ID': user.id }),
           },
-          5 * 60 * 1000 // 5 minute TTL
-        );
-        
-        setChallenges(allChallenges);
-        setFilteredChallenges(allChallenges);
+        });
 
-        // Cache membership checks with 5-minute TTL
-        if (user) {
-          const membershipCacheKey = `challenge:memberships:${user.id}`;
-          const membershipData = await getCachedData(
-            membershipCacheKey,
-            async () => {
-              console.log('[CHALLENGES PAGE] Fetching membership for all challenges...');
-              const result: Record<string, boolean> = {};
-              
-              // Check membership in parallel for faster loading
-              await Promise.all(
-                allChallenges.map(async (challenge: Challenge) => {
-                  try {
-                    const membershipResponse = await fetch(
-                      `/api/challenges/${challenge.id}/membership`,
-                      {
-                        headers: {
-                          'X-User-ID': user.id,
-                        },
-                      }
-                    );
-                    if (membershipResponse.ok) {
-                      const membershipInfo = await membershipResponse.json();
-                      result[challenge.id] = membershipInfo.data?.isMember || false;
-                    }
-                  } catch (err) {
-                    console.error('[CHALLENGES PAGE] Error checking membership for', challenge.id, err);
-                  }
-                })
-              );
-              
-              return result;
-            },
-            5 * 60 * 1000 // 5 minute TTL
-          );
-          
-          setMembershipMap(membershipData);
+        if (response.ok) {
+          const result = await response.json();
+          const allChallenges = result.data || [];
+          setChallenges(allChallenges);
+          setFilteredChallenges(allChallenges);
         }
       } catch (error) {
         console.error('[CHALLENGES PAGE] Failed to fetch challenges:', error);
@@ -109,8 +56,7 @@ export default function ChallengesPage() {
     };
 
     if (user) {
-      console.log('[CHALLENGES PAGE] User exists:', user.email, 'fetching challenges');
-      fetchChallengesAndMembership();
+      fetchChallenges();
     }
   }, [user]);
 
@@ -184,7 +130,8 @@ export default function ChallengesPage() {
               >
                 <ChallengeCard
                   challenge={challenge}
-                  isMember={membershipMap[challenge.id] || false}
+                  // Prefer map if set (optimistic), else legacy property (API)
+                  isMember={membershipMap[challenge.id] ?? (challenge as any).isMember}
                   onJoinSuccess={() => {
                     // Update membership map after joining
                     setMembershipMap(prev => ({

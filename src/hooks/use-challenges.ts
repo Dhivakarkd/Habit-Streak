@@ -10,8 +10,10 @@ import { useCallback, useEffect } from 'react';
  * Hook to fetch and manage challenges
  */
 export function useChallenges() {
-    const { user } = useAuth();
+    const { user, session } = useAuth();
     const queryClient = useQueryClient();
+
+    console.log('[USE_CHALLENGES HOOK] Render. User:', !!user, 'Session:', !!session, 'Token:', !!session?.access_token);
 
     const {
         data: challenges = [],
@@ -19,21 +21,21 @@ export function useChallenges() {
         error,
         refetch,
     } = useQuery({
-        queryKey: ['challenges', user?.id],
+        queryKey: ['challenges', user?.id, session?.access_token],
         queryFn: async (): Promise<Challenge[]> => {
-            // Don't fetch if no user
-            if (!user?.id) return [];
+            // Don't fetch if no user or session
+            if (!user?.id || !session?.access_token) return [];
 
             console.log('[USE_CHALLENGES] Fetching challenges for:', user.id);
 
-            console.log('[USE_CHALLENGES] Fetching session...');
-            const { data } = await supabase.auth.getSession();
-            const token = data.session?.access_token;
+            console.log('[USE_CHALLENGES] Using session from context');
+            const token = session?.access_token;
             console.log('[USE_CHALLENGES] Session Token:', token ? 'Found' : 'Missing', 'Length:', token?.length);
 
             const response = await fetch('/api/challenges', {
                 headers: {
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...(user?.id ? { 'X-User-ID': user.id } : {})
                 }
             });
 
@@ -44,8 +46,8 @@ export function useChallenges() {
             const result = await response.json();
             return result.data || [];
         },
-        // Only run query if we have a user
-        enabled: !!user?.id,
+        // Only run query if we have a user AND a valid session token
+        enabled: !!user?.id && !!session?.access_token,
     });
 
     // Function to invalidate cache and refetch (useful after check-ins)

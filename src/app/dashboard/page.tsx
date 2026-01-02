@@ -16,7 +16,7 @@ import { useChallenges } from '@/hooks/use-challenges';
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const { challenges, isLoading: challengesLoading, invalidateChallenges } = useChallenges();
+  const { challenges, isLoading: challengesLoading, error: challengesError, invalidateChallenges } = useChallenges();
   const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -175,8 +175,18 @@ export default function Dashboard() {
               </Link>
             </Button>
           </div>
-
-          {challengesLoading ? (
+          
+          {challengesError ? (
+            <div className="rounded-2xl bg-destructive/10 p-6 border border-destructive/20 text-center">
+              <h3 className="text-lg font-semibold text-destructive mb-2">Unable to load challenges</h3>
+              <p className="text-muted-foreground mb-4">
+                {(challengesError as Error).message || 'There was a problem connecting to the server.'}
+              </p>
+              <Button onClick={() => invalidateChallenges()} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          ) : challengesLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-64 rounded-2xl bg-muted/60 animate-pulse" />

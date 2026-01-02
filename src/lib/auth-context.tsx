@@ -2,11 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, getCurrentUser, getCurrentSession } from './supabase';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { clearAllCache } from './cache';
 
 export type AuthContextType = {
   user: SupabaseUser | null;
+  session: Session | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   loading: boolean;
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,10 +54,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-        if (currentUser?.id) {
-          await fetchUserRoles(currentUser.id);
+        const currentSession = await getCurrentSession();
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
+        
+        if (currentSession?.user?.id) {
+          await fetchUserRoles(currentSession.user.id);
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
@@ -70,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
       setUser(session?.user || null);
       if (session?.user?.id) {
         await fetchUserRoles(session.user.id);
@@ -130,25 +135,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('[AUTH] Starting sign in for:', email);
 
-      // Call our API route to authenticate (accepts email or username)
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      // Determine if input is email or username
+      let userEmail = email;
+      
+      if (!email.includes('@')) {
+        // It's a username, look up email first
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('email')
+          .eq('username', email)
+          .single();
+
+        if (userError || !userData) {
+          console.error('[AUTH] Username not found:', email);
+          return { success: false, error: 'Invalid username or password' };
+        }
+        userEmail = userData.email;
+      }
+
+      // Sign in directly on the client side to establish the session
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password,
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        console.error('[AUTH] Sign in error:', result.error);
-        return { success: false, error: result.error || 'Sign in failed' };
+      if (error) {
+        console.error('[AUTH] Sign in error:', error.message);
+        return { success: false, error: 'Invalid email or password' };
       }
 
-      console.log('[AUTH] Sign in successful, user:', result.data?.user?.id);
-
-      if (result.data?.user) {
-        setUser(result.data.user);
+      if (!data.user || !data.session) {
+        return { success: false, error: 'Sign in failed' };
       }
+
+      console.log('[AUTH] Sign in successful, user:', data.user.id);
+      
+      // The onAuthStateChange listener will handle setting user and session
+      // But we can also set them here for immediate availability
+      setUser(data.user);
+      setSession(data.session);
 
       return { success: true };
     } catch (error) {
@@ -178,7 +203,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, isSuperAdmin, loading, signUp, signIn, signOut, refreshRoles }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isSuperAdmin, loading, signUp, signIn, signOut, refreshRoles }}>
       {children}
     </AuthContext.Provider>
   );

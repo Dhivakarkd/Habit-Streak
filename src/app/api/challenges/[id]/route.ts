@@ -54,12 +54,48 @@ export async function GET(
 
     console.log('[CHALLENGE DETAIL API] Final userId:', userId);
 
-    // Fetch the challenge
-    const { data: challenge, error } = await supabase
-      .from('challenges')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // Run all database queries in parallel for better performance
+    const [challengeResult, membersResult, checkinsResult, metricsResult] = await Promise.all([
+      // Fetch the challenge
+      supabase
+        .from('challenges')
+        .select('*')
+        .eq('id', id)
+        .single(),
+
+      // Fetch members for this challenge
+      supabase
+        .from('challenge_members')
+        .select(`
+          user_id,
+          users(id, username, display_name, avatar_url)
+        `)
+        .eq('challenge_id', id),
+
+      // Fetch today's check-ins for this challenge
+      supabase
+        .from('checkins')
+        .select('user_id, status')
+        .eq('challenge_id', id)
+        .eq('check_in_date', today),
+
+      // Fetch user's streak and metrics for this challenge (if userId exists)
+      userId
+        ? supabase
+          .from('leaderboard_metrics')
+          .select('current_streak, best_streak')
+          .eq('challenge_id', id)
+          .eq('user_id', userId)
+          .single()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    const { data: challenge, error } = challengeResult;
+    const { data: members, error: membersError } = membersResult;
+    const { data: todayCheckins, error: checkinsError } = checkinsResult;
+    const { data: metrics, error: metricsError } = metricsResult;
 
     if (error || !challenge) {
       console.error('[CHALLENGE DETAIL API] Challenge not found:', error);
@@ -74,28 +110,9 @@ export async function GET(
 
     console.log('[CHALLENGE DETAIL API] Challenge found:', challenge.id);
 
-    // Fetch members for this challenge
-    const { data: members, error: membersError } = await supabase
-      .from('challenge_members')
-      .select(
-        `
-        user_id,
-        users(id, username, display_name, avatar_url)
-      `
-      )
-      .eq('challenge_id', id);
-
     if (membersError) {
       console.error('[CHALLENGE DETAIL API] Error fetching members:', membersError);
     }
-
-    // Fetch today's check-ins for this challenge
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const { data: todayCheckins, error: checkinsError } = await supabase
-      .from('checkins')
-      .select('user_id, status')
-      .eq('challenge_id', id)
-      .eq('check_in_date', today);
 
     if (checkinsError) {
       console.error('[CHALLENGE DETAIL API] Error fetching check-ins:', checkinsError);
@@ -103,26 +120,16 @@ export async function GET(
 
     console.log('[CHALLENGE DETAIL API] Today check-ins:', todayCheckins?.length || 0);
 
-    // Fetch user's streak and metrics for this challenge
+    // Extract metrics
     let currentStreak = 0;
     let bestStreak = 0;
 
-    if (userId) {
-      console.log('[CHALLENGE DETAIL API] Fetching metrics for user:', userId);
-      const { data: metrics, error: metricsError } = await supabase
-        .from('leaderboard_metrics')
-        .select('current_streak, best_streak')
-        .eq('challenge_id', id)
-        .eq('user_id', userId)
-        .single();
-
-      if (metricsError) {
-        console.log('[CHALLENGE DETAIL API] No metrics found for user (normal if just joined)');
-      } else if (metrics) {
-        currentStreak = metrics.current_streak;
-        bestStreak = metrics.best_streak;
-        console.log('[CHALLENGE DETAIL API] Metrics found:', { currentStreak, bestStreak });
-      }
+    if (userId && metrics && !metricsError) {
+      currentStreak = metrics.current_streak;
+      bestStreak = metrics.best_streak;
+      console.log('[CHALLENGE DETAIL API] Metrics found:', { currentStreak, bestStreak });
+    } else if (userId && metricsError) {
+      console.log('[CHALLENGE DETAIL API] No metrics found for user (normal if just joined)');
     }
 
     // Format response
@@ -138,28 +145,28 @@ export async function GET(
       bestStreak,
       members: members
         ? members.map((m: any) => ({
-            id: m.users.id,
-            email: m.users.email || '',
-            username: m.users.username,
-            displayName: m.users.display_name,
-            avatarUrl: m.users.avatar_url,
-            bio: m.users.bio,
-            isAdmin: m.users.is_admin || false,
-            isSuperAdmin: m.users.is_super_admin || false,
-            canCreateChallenges: m.users.can_create_challenges || false,
-            createdAt: m.users.created_at || new Date().toISOString(),
-            updatedAt: m.users.updated_at || new Date().toISOString(),
-          }))
+          id: m.users.id,
+          email: m.users.email || '',
+          username: m.users.username,
+          displayName: m.users.display_name,
+          avatarUrl: m.users.avatar_url,
+          bio: m.users.bio,
+          isAdmin: m.users.is_admin || false,
+          isSuperAdmin: m.users.is_super_admin || false,
+          canCreateChallenges: m.users.can_create_challenges || false,
+          createdAt: m.users.created_at || new Date().toISOString(),
+          updatedAt: m.users.updated_at || new Date().toISOString(),
+        }))
         : [],
       checkins: todayCheckins
         ? todayCheckins.map((c: any) => ({
-            id: c.id || `${c.user_id}-${today}`,
-            challengeId: id,
-            userId: c.user_id,
-            date: today,
-            status: c.status,
-            createdAt: new Date().toISOString(),
-          }))
+          id: c.id || `${c.user_id}-${today}`,
+          challengeId: id,
+          userId: c.user_id,
+          date: today,
+          status: c.status,
+          createdAt: new Date().toISOString(),
+        }))
         : [],
     };
 

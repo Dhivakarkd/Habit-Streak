@@ -61,39 +61,47 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     const leaderboardData = metrics || [];
 
-    // Get user achievements
-    const leaderboard: LeaderboardEntry[] = await Promise.all(
-      leaderboardData.map(async (metric: any, index: number) => {
-        const { data: achievements } = await supabase
-          .from('user_achievements')
-          .select(
-            `
-            achievement_id,
-            achievements(name, description, criteria, icon)
-          `
-          )
-          .eq('user_id', metric.user_id);
+    // Get all user IDs to fetch achievements in one batch query
+    const userIds = leaderboardData.map((m: any) => m.user_id);
 
-        return {
-          rank: index + 1,
-          userId: metric.user_id,
-          username: metric.users?.username || 'Unknown',
-          avatarUrl: metric.users?.avatar_url,
-          currentStreak: metric.current_streak,
-          bestStreak: metric.best_streak,
-          completionRate: metric.completion_rate,
-          totalCompletions: metric.total_completions,
-          missedDays: metric.missed_days_count,
-          achievements: (achievements || []).map((a: any) => ({
-            id: a.achievement_id,
-            name: a.achievements?.name,
-            description: a.achievements?.description,
-            criteria: a.achievements?.criteria,
-            icon: a.achievements?.icon,
-          })),
-        };
-      })
-    );
+    // Fetch all achievements for all users in a single query
+    const { data: allAchievements } = await supabase
+      .from('user_achievements')
+      .select(`
+        user_id,
+        achievement_id,
+        achievements(name, description, criteria, icon)
+      `)
+      .in('user_id', userIds);
+
+    // Group achievements by user_id for quick lookup
+    const achievementsByUser: Record<string, any[]> = {};
+    (allAchievements || []).forEach((a: any) => {
+      if (!achievementsByUser[a.user_id]) {
+        achievementsByUser[a.user_id] = [];
+      }
+      achievementsByUser[a.user_id].push({
+        id: a.achievement_id,
+        name: a.achievements?.name,
+        description: a.achievements?.description,
+        criteria: a.achievements?.criteria,
+        icon: a.achievements?.icon,
+      });
+    });
+
+    // Build leaderboard entries without additional queries
+    const leaderboard: LeaderboardEntry[] = leaderboardData.map((metric: any, index: number) => ({
+      rank: index + 1,
+      userId: metric.user_id,
+      username: metric.users?.username || 'Unknown',
+      avatarUrl: metric.users?.avatar_url,
+      currentStreak: metric.current_streak,
+      bestStreak: metric.best_streak,
+      completionRate: metric.completion_rate,
+      totalCompletions: metric.total_completions,
+      missedDays: metric.missed_days_count,
+      achievements: achievementsByUser[metric.user_id] || [],
+    }));
 
     return NextResponse.json(
       {
