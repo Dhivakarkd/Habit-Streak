@@ -213,6 +213,18 @@ export default function Dashboard() {
               ))}
             </motion.div>
           )}
+
+          {/* Join More Challenges Button */}
+          {challenges.length > 0 && (
+            <div className="flex justify-center mt-8 pb-8">
+              <Button asChild variant="outline" size="lg" className="rounded-full px-8">
+                <Link href="/challenges">
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  Join More Challenges
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>

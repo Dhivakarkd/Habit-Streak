@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import { Challenge } from '@/lib/types';
 import { useCallback, useEffect } from 'react';
 
@@ -25,7 +26,16 @@ export function useChallenges() {
 
             console.log('[USE_CHALLENGES] Fetching challenges for:', user.id);
 
-            const response = await fetch('/api/challenges');
+            console.log('[USE_CHALLENGES] Fetching session...');
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            console.log('[USE_CHALLENGES] Session Token:', token ? 'Found' : 'Missing', 'Length:', token?.length);
+
+            const response = await fetch('/api/challenges', {
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
 
             if (!response.ok) {
                 throw new Error('Failed to fetch challenges');

@@ -29,17 +29,21 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Authenticate user via Supabase Auth
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+
+    console.log('[CHALLENGES API] Token present:', !!token, 'Length:', token?.length);
+
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser(token || undefined);
 
-    if (authError || !user) {
-      console.log('[CHALLENGES API] Unauthorized access attempt');
-      // If no valid session, we can still show public challenges if showAll is true,
-      // but we won't have a userId.
-      // However, for strict security, if the client is trying to get user-specific data, we should probably fail or handle it carefully.
+    if (authError) {
+      console.error('[CHALLENGES API] getUser error:', authError.message);
     }
+
+    console.log('[CHALLENGES API] getUser result:', user?.id || 'null');
 
     const userId = user?.id || null;
     console.log('[CHALLENGES API] Authenticated User ID:', userId || 'none');
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     // If showAll=false (default) and user exists, return only user's joined challenges with streaks
     if (!showAll && userId) {
       console.log('[CHALLENGES API] Fetching challenges joined by user:', userId);
-      
+
       const { data: memberships, error: memberError } = await supabase
         .from('challenge_members')
         .select('challenge_id')
@@ -57,7 +61,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         console.error('[CHALLENGES API] Membership query error:', memberError);
       } else if (memberships && memberships.length > 0) {
         const challengeIds = memberships.map(m => m.challenge_id);
-        
+
         const { data: challenges, error } = await supabase
           .from('challenges')
           .select('*')
