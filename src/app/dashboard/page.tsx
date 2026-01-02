@@ -10,6 +10,7 @@ import { Header } from '@/components/header';
 import { Card } from '@/components/ui/card';
 import { ChallengeCard } from '@/components/challenge-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreateChallengeModal } from '@/components/create-challenge-modal';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Challenge } from '@/lib/types';
@@ -119,16 +120,12 @@ export default function Dashboard() {
               </p>
             </div>
             
-            <Button 
-              asChild 
-              size="lg" 
-              className="hidden md:flex bg-white text-indigo-600 hover:bg-indigo-50 border-0 shadow-lg hover:shadow-xl transition-all rounded-xl font-semibold"
-            >
-              <Link href="/challenges/new">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                New Challenge
-              </Link>
-            </Button>
+            <div className="hidden md:block">
+              <CreateChallengeModal 
+                buttonVariant="secondary"
+                buttonClassName="bg-white text-indigo-600 hover:bg-indigo-50 border-0 shadow-lg hover:shadow-xl transition-all rounded-xl font-semibold"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -164,12 +161,7 @@ export default function Dashboard() {
 
         {/* Mobile New Challenge Button */}
         <div className="md:hidden mb-4">
-          <Button asChild className="w-full gap-2">
-            <Link href="/challenges/new">
-              <PlusCircle className="h-4 w-4" />
-              New Challenge
-            </Link>
-          </Button>
+          <CreateChallengeModal buttonClassName="w-full gap-2" />
         </div>
 
         {/* Challenges Grid */}

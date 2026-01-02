@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreateChallengeModal } from '@/components/create-challenge-modal';
 import { useAuth } from '@/lib/auth-context';
 import { Challenge } from '@/lib/types';
 import { revalidateCache } from '@/lib/cache';
@@ -133,15 +134,12 @@ export default function ChallengesPage() {
                 Join a community, build lasting habits, and start your journey to success.
               </p>
             </div>
-            <Button 
-              asChild 
-              className="hidden md:flex gap-2 bg-white text-emerald-700 hover:bg-emerald-50"
-            >
-              <Link href="/challenges/new">
-                <PlusCircle className="h-4 w-4" />
-                Create Challenge
-              </Link>
-            </Button>
+            <div className="hidden md:block">
+              <CreateChallengeModal 
+                buttonVariant="secondary"
+                buttonClassName="bg-white text-emerald-700 hover:bg-emerald-50"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -180,12 +178,7 @@ export default function ChallengesPage() {
 
         {/* Mobile Create Button */}
         <div className="md:hidden mb-4">
-          <Button asChild className="w-full gap-2">
-            <Link href="/challenges/new">
-              <PlusCircle className="h-4 w-4" />
-              Create Challenge
-            </Link>
-          </Button>
+          <CreateChallengeModal buttonClassName="w-full gap-2" />
         </div>
 
         {/* Search */}
