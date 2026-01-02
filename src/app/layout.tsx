@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { MobileNav } from '@/components/mobile-nav';
 import { AuthProvider } from '@/lib/auth-context';
 import QueryProvider from '@/components/query-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'Habit Streak',
@@ -16,20 +17,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light">
+    <html lang="en" className="light" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased pb-16 md:pb-0">
+      <body className="font-body antialiased pb-16 md:pb-0" suppressHydrationWarning>
         <AuthProvider>
           <QueryProvider>
-            {children}
-            <MobileNav />
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <MobileNav />
+            </ThemeProvider>
           </QueryProvider>
         </AuthProvider>
         <Toaster />

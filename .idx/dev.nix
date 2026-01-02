@@ -21,7 +21,13 @@
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
-      # "vscodevim.vim"
+      "dbaeumer.vscode-eslint"
+      "esbenp.prettier-vscode"
+      "bradlc.vscode-tailwindcss"
+      "ms-playwright.playwright"
+      "dsznajder.es7-react-js-snippets"
+      "yoavbls.pretty-ts-errors"
+      "eamodio.gitlens"
     ];
     workspace = {
       onCreate = {

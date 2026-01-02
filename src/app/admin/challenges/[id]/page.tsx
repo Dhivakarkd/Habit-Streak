@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, Archive, Trash2 } from 'lucide-react';
+import { ChevronLeft, Archive, Trash2, Edit2, Shield, Calendar, Users, Save, X, Plus } from 'lucide-react';
 import { CheckinCalendarAdmin } from '@/components/checkin-calendar-admin';
 
 interface Challenge {
@@ -43,10 +43,6 @@ interface ChallengeMember {
 }
 
 const CATEGORIES = ['Fitness', 'Wellness', 'Productivity', 'Learning', 'Creative'];
-const getTodayDateString = () => {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
-};
 
 export default function ChallengeDetailPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -66,10 +62,6 @@ export default function ChallengeDetailPage() {
   const [addMembersDialog, setAddMembersDialog] = useState(false);
   const [allUsers, setAllUsers] = useState<Array<{ id: string; username: string; email: string }>>([]);
   const [selectedUsersToAdd, setSelectedUsersToAdd] = useState<Set<string>>(new Set());
-
-  const [bulkCheckinDate, setBulkCheckinDate] = useState('');
-  const [bulkCheckinStatus, setBulkCheckinStatus] = useState<'completed' | 'missed'>('completed');
-  const [selectedMembersForBulk, setSelectedMembersForBulk] = useState<Set<string>>(new Set());
 
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -324,174 +316,246 @@ export default function ChallengeDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <>
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <main className="flex-1 bg-gray-50 p-4 md:p-8">Loading...</main>
-      </>
+        <main className="flex-1 p-8 flex items-center justify-center">
+           <div className="flex flex-col items-center gap-4">
+             <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+             <p className="text-muted-foreground animate-pulse">Loading challenge details...</p>
+           </div>
+        </main>
+      </div>
     );
   }
 
   if (!challenge) {
     return (
-      <>
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <main className="flex-1 bg-gray-50 p-4 md:p-8">Challenge not found</main>
-      </>
+        <main className="flex-1 p-8 flex items-center justify-center text-muted-foreground">
+           Challenge not found
+        </main>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="flex-1 bg-gray-50 p-4 md:p-8">
-        <div className="max-w-4xl">
-          {/* Back Button */}
-          <Button variant="outline" size="sm" onClick={() => router.push('/admin')} className="mb-4">
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-
-          {/* Challenge Details */}
-          <Card className="p-6 mb-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                {editing ? (
-                  <div className="space-y-4">
+      
+      {/* Immersive Admin Header */}
+      <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white pb-12 pt-8 md:pt-12 px-4 shadow-xl">
+         <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-5" />
+         
+         <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
+           <div className="space-y-4 max-w-2xl">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => router.push('/admin')} 
+                className="text-indigo-200 hover:text-white hover:bg-white/10 -ml-3"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Back to Dashboard
+              </Button>
+              
+              {editing ? (
+                 <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/10 space-y-4 w-full">
                     <Input
                       value={editData?.name || ''}
                       onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                      placeholder="Challenge name"
+                      className="bg-black/20 border-white/20 text-white placeholder:text-white/40 text-lg font-bold"
+                      placeholder="Challenge Name"
                     />
                     <Textarea
                       value={editData?.description || ''}
                       onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                      placeholder="Description"
+                      className="bg-black/20 border-white/20 text-white placeholder:text-white/40"
                       rows={3}
+                      placeholder="Description"
                     />
-                    <select
-                      value={editData?.category || ''}
-                      onChange={(e) => setEditData({ ...editData, category: e.target.value })}
-                      className="w-full border rounded px-3 py-2"
-                    >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveEdit}>Save</Button>
-                      <Button variant="outline" onClick={() => setEditing(false)}>
-                        Cancel
-                      </Button>
+                     <div className="flex items-center gap-2">
+                         <Badge variant="outline" className="text-white border-white/20">Category:</Badge>
+                        <select
+                          value={editData?.category || ''}
+                          onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+                          className="bg-black/20 border border-white/20 text-white rounded px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          {CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat} className="text-black">
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                     </div>
+                    <div className="flex gap-2 pt-2">
+                       <Button size="sm" onClick={handleSaveEdit} className="bg-emerald-600 hover:bg-emerald-700 text-white border-0">
+                         <Save className="h-4 w-4 mr-2" /> Save Changes
+                       </Button>
+                       <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="bg-transparent border-white/20 text-white hover:bg-white/10">
+                         <X className="h-4 w-4 mr-2" /> Cancel
+                       </Button>
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h1 className="text-3xl font-bold">{challenge.name}</h1>
-                    <p className="text-gray-600 mt-2">{challenge.description}</p>
-                    <div className="flex gap-2 mt-3">
-                      <Badge>{challenge.category}</Badge>
-                      {challenge.isArchived && <Badge variant="secondary">Archived</Badge>}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {!editing && (
-                <div className="flex gap-2">
-                  <Button onClick={() => setEditing(true)}>Edit</Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setConfirmAction('archive')}
-                    disabled={challenge.isArchived}
-                  >
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setConfirmAction('delete')}
-                    disabled={!challenge.isArchived}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Tabs */}
-          <Tabs defaultValue="members" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="members">Members</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="members" className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Members ({members.length})</h2>
-                <Button size="sm" onClick={handleOpenAddMembers}>
-                  + Add Members
-                </Button>
-              </div>
-
-              {members.length === 0 ? (
-                <Card className="p-4 text-center text-muted-foreground">No members yet</Card>
+                 </div>
               ) : (
-                <div className="space-y-4">
-                  {members.map((member) => (
-                    <Card
-                      key={member.userId}
-                      className="p-4 cursor-pointer hover:bg-gray-50"
-                      onClick={() =>
-                        setSelectedMemberForCheckins(
-                          selectedMemberForCheckins === member.userId ? null : member.userId
-                        )
-                      }
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{member.username}</h3>
-                          <p className="text-sm text-gray-600">{member.email}</p>
-                          {member.currentStreak !== undefined && (
-                            <Badge variant="outline" className="mt-2">
-                              Streak: {member.currentStreak}
-                            </Badge>
-                          )}
-                        </div>
-                        {member.completionRate !== undefined && (
-                          <div className="text-right">
-                            <p className="text-sm text-gray-600">{member.completionRate.toFixed(0)}% Complete</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {selectedMemberForCheckins === member.userId && member.checkins && (
-                        <div className="mt-4 pt-4 border-t">
-                          <CheckinCalendarAdmin
-                            userId={member.userId}
-                            challengeId={challenge.id}
-                            checkins={member.checkins}
-                            currentStreak={member.currentStreak}
-                            completionRate={member.completionRate}
-                            onDateToggle={(date, status) => {
-                              setConfirmDialog({
-                                open: true,
-                                action: 'individualCheckin',
-                                userId: member.userId,
-                                date,
-                                status,
-                              });
-                            }}
-                          />
-                        </div>
-                      )}
-                    </Card>
-                  ))}
-                </div>
+                <>
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                       <Badge className="bg-indigo-500/20 text-indigo-200 hover:bg-indigo-500/30 border-0">
+                         {challenge.category}
+                       </Badge>
+                       {challenge.isArchived && (
+                         <Badge variant="destructive">Archived</Badge>
+                       )}
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-bold font-headline leading-tight">
+                      {challenge.name}
+                    </h1>
+                  </div>
+                  <p className="text-lg text-slate-300 font-light leading-relaxed">
+                    {challenge.description}
+                  </p>
+                </>
               )}
-            </TabsContent>
-          </Tabs>
-        </div>
+           </div>
+
+           {/* Quick Actions Panel */}
+           <Card className="glass-card bg-white/5 border-white/10 p-4 min-w-[280px]">
+              <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Shield className="h-3 w-3" /> Admin Controls
+              </h3>
+              <div className="space-y-2">
+                 {!editing && (
+                    <Button variant="secondary" className="w-full justify-start" onClick={() => setEditing(true)}>
+                      <Edit2 className="h-4 w-4 mr-2" /> Edit Details
+                    </Button>
+                 )}
+                 <Button 
+                   variant="secondary" 
+                   className="w-full justify-start hover:bg-amber-100 hover:text-amber-900 border-transparent" 
+                   onClick={() => setConfirmAction('archive')}
+                   disabled={challenge.isArchived}
+                 >
+                   <Archive className="h-4 w-4 mr-2" /> Archive Challenge
+                 </Button>
+                 <Button 
+                   variant="destructive" 
+                   className="w-full justify-start bg-red-900/50 hover:bg-red-600 border-transparent text-red-100" 
+                   onClick={() => setConfirmAction('delete')}
+                   disabled={!challenge.isArchived}
+                 >
+                   <Trash2 className="h-4 w-4 mr-2" /> Delete Permanent
+                 </Button>
+              </div>
+           </Card>
+         </div>
+      </div>
+
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-8 -mt-8 relative z-20">
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Sidebar Stats */}
+            <div className="lg:col-span-1 space-y-6">
+                <Card className="glass-card p-6">
+                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Overview</h3>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
+                         <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{members.length}</p>
+                         <p className="text-xs text-muted-foreground">Members</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+                         <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
+                           {/* Calculate average streak or other metric */}
+                           -
+                         </p>
+                         <p className="text-xs text-muted-foreground">Avg Streak</p>
+                      </div>
+                   </div>
+                </Card>
+            </div>
+
+            {/* Main Content (Members) */}
+            <div className="lg:col-span-2">
+               <Card className="glass-card min-h-[500px] flex flex-col">
+                  <div className="p-6 border-b border-border/40 flex items-center justify-between">
+                     <h2 className="text-xl font-bold flex items-center gap-2">
+                       <Users className="h-5 w-5 text-primary" /> Members
+                     </h2>
+                     <Button size="sm" onClick={handleOpenAddMembers} className="gap-2">
+                       <Plus className="h-4 w-4" /> Add Users
+                     </Button>
+                  </div>
+                  
+                  <div className="p-0 flex-1">
+                    {members.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                        <Users className="h-12 w-12 opacity-20 mb-3" />
+                        <p>No members in this challenge yet.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                         {members.map((member) => (
+                           <div key={member.userId} className="border-b border-border/40 last:border-0">
+                              <div 
+                                className={`p-4 hover:bg-muted/30 cursor-pointer transition-colors ${selectedMemberForCheckins === member.userId ? 'bg-muted/50' : ''}`}
+                                onClick={() => setSelectedMemberForCheckins(selectedMemberForCheckins === member.userId ? null : member.userId)}
+                              >
+                                 <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                                          {member.username.charAt(0).toUpperCase()}
+                                       </div>
+                                       <div>
+                                          <p className="font-semibold text-foreground">{member.username}</p>
+                                          <p className="text-xs text-muted-foreground">{member.email}</p>
+                                       </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm">
+                                       <div className="text-right">
+                                          <p className="font-mono font-bold">{member.currentStreak || 0}</p>
+                                          <p className="text-[10px] text-muted-foreground uppercase">Streak</p>
+                                       </div>
+                                       <div className="text-right">
+                                          <p className="font-mono font-bold">{Math.round(member.completionRate || 0)}%</p>
+                                          <p className="text-[10px] text-muted-foreground uppercase">Rate</p>
+                                       </div>
+                                       <ChevronLeft className={`h-4 w-4 text-muted-foreground transition-transform ${selectedMemberForCheckins === member.userId ? '-rotate-90' : ''}`} />
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              {/* Expanded Member Details (Check-in Calendar) */}
+                              {selectedMemberForCheckins === member.userId && member.checkins && (
+                                <div className="p-4 bg-muted/20 animate-in slide-in-from-top-2 duration-200">
+                                   <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-muted-foreground">
+                                      <Calendar className="h-4 w-4" /> Participation History
+                                   </div>
+                                   <div className="border rounded-xl bg-background/50 p-4">
+                                      <CheckinCalendarAdmin
+                                        userId={member.userId}
+                                        challengeId={challenge.id}
+                                        checkins={member.checkins}
+                                        currentStreak={member.currentStreak}
+                                        completionRate={member.completionRate}
+                                        onDateToggle={(date, status) => {
+                                          setConfirmDialog({
+                                            open: true,
+                                            action: 'individualCheckin',
+                                            userId: member.userId,
+                                            date,
+                                            status,
+                                          });
+                                        }}
+                                      />
+                                   </div>
+                                </div>
+                              )}
+                           </div>
+                         ))}
+                      </div>
+                    )}
+                  </div>
+               </Card>
+            </div>
+         </div>
       </main>
 
       {/* Dialogs */}
@@ -499,38 +563,38 @@ export default function ChallengeDetailPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Members</DialogTitle>
-            <DialogDescription>Select users to add to this challenge</DialogDescription>
+            <DialogDescription>Select users to add to this challenge.</DialogDescription>
           </DialogHeader>
-          <div className="max-h-96 overflow-y-auto border rounded p-3 space-y-2">
+          <Input placeholder="Search users..." className="mb-2" />
+          <div className="max-h-[300px] overflow-y-auto border rounded-xl p-2 space-y-1">
             {allUsers.map((u) => (
-              <label key={u.id} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedUsersToAdd.has(u.id)}
-                  onChange={(e) => {
-                    const newSelected = new Set(selectedUsersToAdd);
-                    if (e.target.checked) {
-                      newSelected.add(u.id);
-                    } else {
-                      newSelected.delete(u.id);
-                    }
-                    setSelectedUsersToAdd(newSelected);
-                  }}
-                  className="w-4 h-4"
-                />
-                <div>
-                  <p className="text-sm font-medium">{u.username}</p>
-                  <p className="text-xs text-gray-600">{u.email}</p>
-                </div>
-              </label>
+              <div 
+                key={u.id}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedUsersToAdd.has(u.id) ? 'bg-indigo-50 dark:bg-indigo-900/30 ring-1 ring-indigo-500' : 'hover:bg-muted'}`}
+                onClick={() => {
+                   const newSelected = new Set(selectedUsersToAdd);
+                   if (newSelected.has(u.id)) newSelected.delete(u.id);
+                   else newSelected.add(u.id);
+                   setSelectedUsersToAdd(newSelected);
+                }}
+              >
+                  <div className={`h-4 w-4 rounded border flex items-center justify-center ${selectedUsersToAdd.has(u.id) ? 'bg-indigo-600 border-indigo-600' : 'border-muted-foreground'}`}>
+                      {selectedUsersToAdd.has(u.id) && <div className="h-2 w-2 rounded-full bg-white" />}
+                  </div>
+                 <div>
+                   <p className="text-sm font-medium">{u.username}</p>
+                   <p className="text-xs text-muted-foreground">{u.email}</p>
+                 </div>
+              </div>
             ))}
+            {allUsers.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm">No available users found.</p>}
           </div>
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end mt-2">
             <Button variant="outline" onClick={() => setAddMembersDialog(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddMembers} disabled={selectedUsersToAdd.size === 0}>
-              Add
+              Add Selected ({selectedUsersToAdd.size})
             </Button>
           </div>
         </DialogContent>
@@ -540,18 +604,18 @@ export default function ChallengeDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction === 'archive' ? 'Archive Challenge' : 'Delete Challenge'}
+              {confirmAction === 'archive' ? 'Archive Challenge?' : 'Delete Challenge?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === 'archive'
-                ? 'This challenge will be moved to archived and hidden from active view.'
-                : 'This will permanently delete the challenge and all associated data.'}
+                ? 'This challenge will be hidden from the active dashboard but data remains intact.'
+                : 'This action cannot be undone. All check-ins and member data will be permanently removed.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className={confirmAction === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
+              className={confirmAction === 'delete' ? 'bg-destructive hover:bg-destructive/90' : ''}
               onClick={() => {
                 if (confirmAction === 'archive') handleArchive();
                 else if (confirmAction === 'delete') handleDelete();
@@ -569,18 +633,17 @@ export default function ChallengeDetailPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Check-in Update</AlertDialogTitle>
+            <AlertDialogTitle>Update Check-in Status</AlertDialogTitle>
             <AlertDialogDescription>
-              Mark check-in as <span className="font-semibold">{confirmDialog.status}</span> for{' '}
-              <span className="font-semibold">{confirmDialog.date}</span>?
+              Change status for <span className="font-semibold text-foreground">{confirmDialog.date}</span> to <Badge variant={confirmDialog.status === 'completed' ? 'default' : 'destructive'}>{confirmDialog.status}</Badge>?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex gap-2">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleExecuteIndividualCheckin}>Save</AlertDialogAction>
+          <div className="flex gap-2 justify-end">
+             <AlertDialogCancel>Cancel</AlertDialogCancel>
+             <AlertDialogAction onClick={handleExecuteIndividualCheckin}>Confirm Update</AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }

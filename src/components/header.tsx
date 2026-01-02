@@ -27,6 +27,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ModeToggle } from '@/components/mode-toggle';
+import { CreateChallengeModal } from '@/components/create-challenge-modal';
 
 export function Header() {
   const { user, signOut, isAdmin, isSuperAdmin, refreshRoles } = useAuth();
@@ -51,7 +53,7 @@ export function Header() {
       try {
         const { data, error } = await supabase
           .from('users')
-          .select('id, username, display_name, email')
+          .select('id, username, display_name, email, avatar_url')
           .eq('id', user.id)
           .single();
 
@@ -85,6 +87,7 @@ export function Header() {
 
   const displayName = userProfile?.display_name || userProfile?.username || user?.email || 'User';
   const initials = displayName.charAt(0).toUpperCase();
+  const avatarUrl = userProfile?.avatar_url || `https://api.dicebear.com/9.x/notionists/svg?seed=${displayName}`;
 
   return (
     <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center gap-1 sm:gap-2 md:gap-4 border-b bg-background/95 backdrop-blur-sm px-2 sm:px-3 md:px-6 support-[backdrop-filter]:bg-background/60">
@@ -119,33 +122,36 @@ export function Header() {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto">
-          {/* Create Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 md:h-10 text-xs md:text-sm min-w-fit px-2 md:px-3"
-            asChild
-          >
-            <Link href="/challenges/new" className="flex items-center gap-1 md:gap-2 whitespace-nowrap">
-              <span className="hidden sm:inline">+</span>
-              <span className="hidden md:inline">New</span>
-              <span className="sm:hidden">New</span>
-            </Link>
-          </Button>
+          {/* Create Challenge Modal */}
+          <CreateChallengeModal />
+
+          <ModeToggle />
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full h-9 w-9 md:h-10 md:w-10 flex-shrink-0 min-h-[44px] min-w-[44px]">
-                <Avatar className="h-full w-full">
-                  <AvatarFallback className="text-xs md:text-sm">{initials}</AvatarFallback>
+              <Button 
+                variant="ghost" 
+                className="relative h-9 md:h-10 rounded-full pl-2 pr-2 md:pr-4 flex items-center gap-2 hover:bg-accent hover:text-accent-foreground"
+              >
+                <Avatar className="h-7 w-7 md:h-8 md:w-8 border">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="text-xs bg-primary/10 text-primary">{initials}</AvatarFallback>
                 </Avatar>
-                <span className="sr-only">Toggle user menu</span>
+                <span className="hidden md:inline-block text-sm font-medium max-w-[100px] truncate">
+                  {displayName}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 md:w-56 lg:w-64">
-              <DropdownMenuLabel className="text-xs md:text-sm truncate">
-                {displayName}
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none truncate">{displayName}</p>
+                  <p className="text-xs leading-none text-muted-foreground truncate">
+                    {user?.email}
+                  </p>
+                </div>
+
                 {isSuperAdmin && <span className="ml-1 text-xs text-red-600 block">Super Admin</span>}
                 {isAdmin && !isSuperAdmin && <span className="ml-1 text-xs text-blue-600 block">Admin</span>}
               </DropdownMenuLabel>

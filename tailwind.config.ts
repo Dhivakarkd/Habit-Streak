@@ -1,4 +1,4 @@
-import type {Config} from 'tailwindcss';
+import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
@@ -10,9 +10,14 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['Plus Jakarta Sans', 'sans-serif'],
+        headline: ['Outfit', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
         code: ['monospace'],
+      },
+      boxShadow: {
+        'glow': '0 0 20px -5px hsl(var(--primary) / 0.5)',
+        'glow-lg': '0 0 30px -5px hsl(var(--primary) / 0.6)',
       },
       colors: {
         background: 'hsl(var(--background))',

@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Step 1: Start Dev Server (Port 9002)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "started server on .+, url: (https?://.+)",
+        "uriFormat": "%s",
+        "webRoot": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Step 2: Run Genkit Dev",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "genkit:dev"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Test: Run E2E Tests",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "test:e2e"
+      ],
+      "console": "integratedTerminal"
+    }
+  ]
+}

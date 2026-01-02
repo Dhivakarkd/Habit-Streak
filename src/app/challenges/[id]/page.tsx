@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { getCachedData, revalidateCache } from '@/lib/cache';
-import { Share2, Snowflake } from 'lucide-react';
+import { Share2, Snowflake, Calendar, Users, Trophy } from 'lucide-react';
 
 type ChallengeDetailPageProps = {
   params: Promise<{
@@ -225,7 +225,10 @@ export default function ChallengeDetailPage({ params: paramsPromise }: Challenge
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <p className="text-muted-foreground">Loading challenge...</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-muted-foreground animate-pulse">Loading challenge...</p>
+          </div>
         </main>
       </div>
     );
@@ -253,133 +256,165 @@ export default function ChallengeDetailPage({ params: paramsPromise }: Challenge
   }, {}) || {};
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col bg-[#F8F9FE] dark:bg-[#0a0a0a]">
       <ConfettiAnimation trigger={showConfetti} />
+      {/* Immersive Background */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-100/40 via-transparent to-transparent dark:from-indigo-900/20 pointer-events-none" />
+      
       <Header />
-      <main className="flex-1 w-full overflow-x-hidden">
-        <div className="w-full flex flex-col gap-4 md:gap-6 lg:gap-8">
-          {/* Mobile: Full width cards, Desktop: Grid layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 px-3 md:px-6 lg:px-8 pt-3 md:pt-6 lg:pt-8 auto-rows-max lg:auto-rows-auto">
-            {/* LEFT COLUMN - Primary Content */}
-            <div className="grid gap-4 md:gap-6 lg:gap-8 lg:col-span-2 row-span-full lg:row-span-1">
-              {/* Challenge Header Card */}
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-2 md:pb-3 lg:pb-4">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold break-words">{name}</CardTitle>
-                      </div>
-                      <div className="flex-shrink-0 flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-lg bg-primary/10 text-base sm:text-lg md:text-2xl flex-col-reverse">
-                        <span>{category}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs sm:text-sm md:text-base text-muted-foreground break-words">{description}</p>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4 pt-2 md:pt-3 lg:pt-4">
-                  {isMember && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 md:p-4">
-                      <StreakDisplay
-                        currentStreak={challenge.currentStreak || 0}
-                      bestStreak={challenge.bestStreak || 0}
-                    />
-                      <div className="flex flex-col gap-2 mt-3">
-                        <Button 
-                          onClick={() => setIsFreezeDayPickerOpen(true)}
-                          variant="outline"
-                          className="w-full gap-2 text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
-                        >
-                          <Snowflake className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          <span className="hidden sm:inline">Schedule Freeze Days</span>
-                          <span className="sm:hidden">Freeze Days</span>
-                        </Button>
-                        <Button 
-                          onClick={() => setIsShareModalOpen(true)}
-                          className="w-full gap-2 text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 min-h-[36px] sm:min-h-[40px]"
-                        >
-                          <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          <span className="hidden sm:inline">Share Summary</span>
-                          <span className="sm:hidden">Share</span>
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  {!isMember && (
-                    <Button 
-                      onClick={handleJoinChallenge}
-                      disabled={joiningChallenge}
-                      className="w-full h-10 sm:h-11 text-sm sm:text-base font-semibold"
-                    >
-                      Join Challenge
-                    </Button>
-                  )}
-              </CardContent>
-            </Card>
-
-            {/* Daily Check-in - Top Priority */}
-            {isMember && (
-              <DailyCheckin 
-                challengeId={params?.id} 
-                onCheckInSuccess={refetchChallenge} 
-                todayStatus={todayCheckin?.status as 'completed' | 'missed' | undefined}
-                currentStreak={challenge.currentStreak || 0}
-                lastActivity={`${name} activity`}
-              />
-            )}
-            
-            {/* Check-in History - Collapsible Tab */}
-            {isMember && (
-              <Tabs defaultValue="calendar" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 text-xs sm:text-sm mb-3 md:mb-4">
-                  <TabsTrigger value="calendar" className="text-xs sm:text-sm px-2 sm:px-4">Check-in</TabsTrigger>
-                  <TabsTrigger value="stats" className="text-xs sm:text-sm px-2 sm:px-4">Stats</TabsTrigger>
-                </TabsList>
-                <div className="min-h-[240px] sm:min-h-[300px] md:min-h-[360px]">
-                  <TabsContent value="calendar" className="mt-0 h-full">
-                    <CheckinHistoryCalendar checkins={checkinHistory} />
-                  </TabsContent>
-                  <TabsContent value="stats" className="mt-0 h-full">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm sm:text-base">Statistics</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                          <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-2 text-center">
-                            <p className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">🔥</p>
-                            <p className="text-xs sm:text-sm font-semibold mt-0.5">{challenge.currentStreak || 0}</p>
-                            <p className="text-xs text-muted-foreground">Current</p>
-                          </div>
-                          <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-2 text-center">
-                            <p className="text-lg sm:text-xl font-bold text-yellow-600 dark:text-yellow-400">⭐</p>
-                            <p className="text-xs sm:text-sm font-semibold mt-0.5">{challenge.bestStreak || 0}</p>
-                            <p className="text-xs text-muted-foreground">Best</p>
-                          </div>
-                          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 text-center">
-                            <p className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">📊</p>
-                            <p className="text-xs sm:text-sm font-semibold mt-0.5">{Math.round(challenge.completionRate || 0)}%</p>
-                            <p className="text-xs text-muted-foreground">Rate</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </div>
-              </Tabs>
-            )}
+      
+      <main className="relative flex-1 w-full overflow-x-hidden">
+        {/* HERO HEADER */}
+        <div className="relative w-full bg-gradient-to-b from-indigo-600 to-purple-800 dark:from-indigo-900 dark:to-black pb-24 pt-12 md:pt-16 lg:pt-20 px-4">
+           {/* Abstract Shapes */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-30">
+            <div className="absolute top-[-20%] right-[-10%] w-[50vh] h-[50vh] bg-pink-500 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[-10%] left-[-10%] w-[40vh] h-[40vh] bg-blue-500 rounded-full blur-[100px]" />
           </div>
 
-          {/* RIGHT SIDEBAR - Supporting Info */}
-            <div className="grid gap-4 md:gap-6 lg:gap-8 lg:row-span-full">
-              <MembersList 
+          <div className="max-w-7xl mx-auto flex flex-col items-center text-center relative z-10 space-y-4 md:space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/10 text-white text-sm font-medium">
+               <span className="capitalize">{category}</span>
+            </div>
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold font-headline text-white tracking-tight">
+              {name}
+            </h1>
+            <p className="text-indigo-100/90 text-lg md:text-xl max-w-2xl font-light leading-relaxed">
+              {description}
+            </p>
+            
+            {isMember && (
+              <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-white">
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
+                   <Calendar className="h-5 w-5 opacity-80" />
+                   <span className="font-semibold">{challenge.checkins?.length || 0}</span>
+                   <span className="text-sm opacity-80">check-ins</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
+                   <Users className="h-5 w-5 opacity-80" />
+                   <span className="font-semibold">{challenge.members?.length || 0}</span>
+                   <span className="text-sm opacity-80">members</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 pb-12 relative z-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* LEFT COLUMN (Main Content) */}
+            <div className="lg:col-span-8 flex flex-col gap-8">
+              {/* MEMBER STATE: Check-in & Actions */}
+              {isMember ? (
+                <>
+                  <DailyCheckin 
+                    challengeId={params?.id} 
+                    onCheckInSuccess={refetchChallenge} 
+                    todayStatus={todayCheckin?.status as 'completed' | 'missed' | undefined}
+                    currentStreak={challenge.currentStreak || 0}
+                    lastActivity={`${name} activity`}
+                  />
+
+                   {/* Stats Grid */}
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     <Card className="bg-background/90 md:glass-card flex flex-col items-center justify-center p-6 text-center border-border/50">
+                        <Trophy className="h-8 w-8 text-yellow-500 mb-2" />
+                        <span className="text-2xl font-bold">{challenge.bestStreak || 0}</span>
+                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Best Streak</span>
+                     </Card>
+                     <Card className="bg-background/90 md:glass-card flex flex-col items-center justify-center p-6 text-center border-border/50">
+                        <Calendar className="h-8 w-8 text-indigo-500 mb-2" />
+                        <span className="text-2xl font-bold">{Math.round(challenge.completionRate || 0)}%</span>
+                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Completion</span>
+                     </Card>
+                      {/* Action Buttons */}
+                      <Card 
+                        className="bg-background/90 md:glass-card col-span-2 flex flex-row items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors border-border/50"
+                        onClick={() => setIsFreezeDayPickerOpen(true)}
+                      >
+                         <div className="flex items-center gap-3">
+                           <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                             <Snowflake className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                           </div>
+                           <div className="text-left">
+                             <p className="font-semibold text-sm">Freeze Days</p>
+                             <p className="text-xs text-muted-foreground">Skip without losing streak</p>
+                           </div>
+                         </div>
+                      </Card>
+                       <Card 
+                        className="bg-background/90 md:glass-card col-span-2 flex flex-row items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors border-border/50"
+                        onClick={() => setIsShareModalOpen(true)}
+                      >
+                         <div className="flex items-center gap-3">
+                           <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                             <Share2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                           </div>
+                           <div className="text-left">
+                             <p className="font-semibold text-sm">Share Progress</p>
+                             <p className="text-xs text-muted-foreground">Show off your achievements</p>
+                           </div>
+                         </div>
+                      </Card>
+                   </div>
+                  
+                  {/* History Tabs */}
+                  <div className="bg-white/50 dark:bg-card/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/10 p-4 md:p-6 shadow-sm">
+                    <Tabs defaultValue="calendar" className="w-full">
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold font-headline">History</h3>
+                        <TabsList className="bg-muted/50">
+                          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+                          <TabsTrigger value="list">List View</TabsTrigger>
+                        </TabsList>
+                      </div>
+                      <TabsContent value="calendar" className="mt-0">
+                        <CheckinHistoryCalendar checkins={checkinHistory} />
+                      </TabsContent>
+                      <TabsContent value="list" className="mt-0">
+                        <div className="text-center py-12 text-muted-foreground">
+                          Check-in list view coming soon.
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                </>
+              ) : (
+                <Card className="glass-card p-6 md:p-8 text-center space-y-6">
+                  <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                    <Trophy className="h-10 w-10 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold">Join this Challenge</h2>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Start tracking your progress, compete with friends, and build a lasting habit.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleJoinChallenge}
+                    disabled={joiningChallenge}
+                    size="lg"
+                    className="w-full max-w-sm font-semibold text-lg h-12"
+                    variant="gradient"
+                  >
+                    {joiningChallenge ? 'Joining...' : 'Start Challenge Now'}
+                  </Button>
+                </Card>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN (Sidebar) */}
+            <div className="lg:col-span-4 space-y-6">
+               <ChallengeLeaderboard challengeId={params?.id || ''} />
+               
+               <MembersList 
                 members={challenge.members || []} 
                 checkins={challenge.checkins || []}
                 completionRates={completionRates}
               />
-              
-              <ChallengeLeaderboard challengeId={params?.id || ''} />
             </div>
+
           </div>
         </div>
       </main>

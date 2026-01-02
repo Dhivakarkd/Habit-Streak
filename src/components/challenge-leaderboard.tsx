@@ -191,8 +191,8 @@ export function ChallengeLeaderboard({ challengeId }: ChallengeLeaderboardProps)
                   </TableHeader>
                   <TableBody>
                     {leaderboard.map((entry, index) => (
-                      <TableRow key={entry.userId} className="hover:bg-muted/50">
-                        <TableCell className="text-center">
+                      <TableRow key={entry.userId} className="hover:bg-muted/50 align-middle">
+                        <TableCell className="text-center align-middle">
                           <Badge
                             variant={index < 3 ? 'default' : 'secondary'}
                             className={
@@ -208,21 +208,23 @@ export function ChallengeLeaderboard({ challengeId }: ChallengeLeaderboardProps)
                             {entry.rank}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
+                        <TableCell className="align-middle">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9 border border-border">
                               <AvatarImage src={entry.avatarUrl} alt={entry.username} />
                               <AvatarFallback className="text-xs">
                                 {entry.username?.slice(0, 2).toUpperCase() || 'U'}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-sm">{entry.username}</span>
-                              <AchievementsPopover achievements={entry.achievements} />
+                            <div className="flex flex-col justify-center">
+                              <span className="font-semibold text-sm leading-none">{entry.username}</span>
+                              <div className="mt-1">
+                                <AchievementsPopover achievements={entry.achievements} />
+                              </div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right font-bold text-lg">
+                        <TableCell className="text-right font-bold text-lg align-middle">
                           {getMetricValue(entry) ?? 0}
                         </TableCell>
                       </TableRow>
