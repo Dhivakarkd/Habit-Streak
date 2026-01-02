@@ -15,6 +15,7 @@ import {
   Users,
   Menu,
   X,
+  Settings,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ModeToggle } from '@/components/mode-toggle';
 import { CreateChallengeModal } from '@/components/create-challenge-modal';
+import { ChangePasswordDialog } from '@/components/change-password-dialog';
 
 export function Header() {
   const { user, signOut, isAdmin, isSuperAdmin, refreshRoles } = useAuth();
@@ -36,6 +38,7 @@ export function Header() {
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [changePasswordOpen, setChangePasswordOpen] = React.useState(false);
 
   // Refresh roles when component mounts to get latest admin status
   React.useEffect(() => {
@@ -90,6 +93,7 @@ export function Header() {
   const avatarUrl = userProfile?.avatar_url || `https://api.dicebear.com/9.x/notionists/svg?seed=${displayName}`;
 
   return (
+    <>
     <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center gap-1 sm:gap-2 md:gap-4 border-b bg-background/95 backdrop-blur-sm px-2 sm:px-3 md:px-6 support-[backdrop-filter]:bg-background/60">
       <nav className="flex w-full items-center justify-between">
         {/* Logo */}
@@ -160,6 +164,13 @@ export function Header() {
                 <UserIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 <span>Profile</span>
               </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setChangePasswordOpen(true)}
+                className="text-xs md:text-sm cursor-pointer"
+              >
+                <Settings className="mr-2 h-4 w-4 flex-shrink-0" />
+                <span>Settings</span>
+              </DropdownMenuItem>
               {(isAdmin || isSuperAdmin) && <DropdownMenuSeparator />}
               {isAdmin && (
                 <DropdownMenuItem asChild className="text-xs md:text-sm cursor-pointer">
@@ -173,7 +184,7 @@ export function Header() {
                 <DropdownMenuItem asChild className="text-xs md:text-sm cursor-pointer">
                   <Link href="/admin/users">
                     <Users className="mr-2 h-4 w-4 flex-shrink-0" />
-                    <span>User Management</span>
+                    <span>User Admin</span>
                   </Link>
                 </DropdownMenuItem>
               )}
@@ -187,5 +198,15 @@ export function Header() {
         </div>
       </nav>
     </header>
+      
+      {/* Change Password Dialog */}
+      {user?.id && (
+        <ChangePasswordDialog
+          open={changePasswordOpen}
+          onOpenChange={setChangePasswordOpen}
+          userId={user.id}
+        />
+      )}
+    </>
   );
 }

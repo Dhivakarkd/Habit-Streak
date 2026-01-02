@@ -10,7 +10,8 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, Shield, Users, Archive, LayoutGrid } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ChevronLeft, ChevronRight, Shield, Users, Archive, LayoutGrid, Search } from 'lucide-react';
 
 interface Challenge {
   id: string;
@@ -31,6 +32,7 @@ export default function AdminChallengesPage() {
 
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Redirect if not admin
   useEffect(() => {
@@ -93,8 +95,16 @@ export default function AdminChallengesPage() {
     return null;
   }
 
-  const activeChallenges = challenges.filter((c) => !c.isArchived);
-  const archivedChallenges = challenges.filter((c) => c.isArchived);
+  // Filter challenges based on search
+  const filteredChallenges = challenges.filter(
+    (c) =>
+      c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const activeChallenges = filteredChallenges.filter((c) => !c.isArchived);
+  const archivedChallenges = filteredChallenges.filter((c) => c.isArchived);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -140,6 +150,19 @@ export default function AdminChallengesPage() {
                 <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
            </Card>
+        </div>
+
+        {/* Search */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1 border max-w-md">
+            <Search className="h-5 w-5 text-muted-foreground ml-3" />
+            <Input
+              placeholder="Search challenges..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
         </div>
 
         {/* Filters & Content */}
