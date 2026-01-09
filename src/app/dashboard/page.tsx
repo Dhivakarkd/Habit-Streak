@@ -22,6 +22,8 @@ export default function Dashboard() {
   const router = useRouter();
   const { challenges, isLoading: challengesLoading, error: challengesError, invalidateChallenges } = useChallenges();
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [quote, setQuote] = useState({ text: "Small progress is still progress.", author: "Unknown" });
+  const [quoteLoading, setQuoteLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,6 +55,23 @@ export default function Dashboard() {
 
     fetchUserProfile();
   }, [user?.id]);
+
+  useEffect(() => {
+    const fetchQuote = async () => {
+      try {
+        const res = await fetch('/api/quote');
+        if (res.ok) {
+          const data = await res.json();
+          setQuote(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch quote:', error);
+      } finally {
+        setQuoteLoading(false);
+      }
+    };
+    fetchQuote();
+  }, []);
 
   const displayName = userProfile?.display_name || userProfile?.username || user?.email?.split('@')[0] || 'User';
   
@@ -154,9 +173,23 @@ export default function Dashboard() {
           </Card>
           <Card className="glass-card p-6 flex flex-col justify-center border-slate-200/50 dark:border-slate-800/50 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/10 col-span-2 md:col-span-1">
             <p className="text-sm font-medium text-muted-foreground">Tip of the day</p>
-            <p className="text-base font-medium text-foreground mt-2 italic">
-              "Small progress is still progress."
-            </p>
+            <div className="mt-2">
+              {quoteLoading ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-4 bg-emerald-200/50 dark:bg-emerald-800/50 rounded w-3/4"></div>
+                  <div className="h-3 bg-emerald-200/50 dark:bg-emerald-800/50 rounded w-1/2"></div>
+                </div>
+              ) : (
+                <figure>
+                  <blockquote className="text-base font-medium text-foreground italic">
+                    "{quote.text}"
+                  </blockquote>
+                  <figcaption className="text-xs text-muted-foreground mt-2 text-right">
+                    — {quote.author}
+                  </figcaption>
+                </figure>
+              )}
+            </div>
           </Card>
         </div>
 
