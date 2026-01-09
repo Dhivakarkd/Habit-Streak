@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Challenge } from '@/lib/types';
 import { useChallenges } from '@/hooks/use-challenges';
+import { CheckInFab } from '@/components/checkin-fab';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -238,6 +239,9 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      {/* Floating Action Button */}
+      <CheckInFab />
     </div>
   );
 }

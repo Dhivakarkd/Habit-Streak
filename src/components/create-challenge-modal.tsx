@@ -78,7 +78,7 @@ const defaultValues: Partial<ChallengeFormValues> = {
 export function CreateChallengeModal() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [open, setOpen] = useState(false);
@@ -91,10 +91,14 @@ export function CreateChallengeModal() {
 
   // Fetch users when component mounts (or when modal opens)
   useEffect(() => {
-    if (open) {
+    if (open && isAdmin) {
       const fetchUsers = async () => {
         try {
-          const response = await fetch("/api/users/list");
+          const response = await fetch("/api/users/list", {
+            headers: {
+              "X-User-ID": user?.id || "",
+            },
+          });
           if (response.ok) {
             const data = await response.json();
             setUsers(data.data || []);
@@ -108,7 +112,7 @@ export function CreateChallengeModal() {
 
       fetchUsers();
     }
-  }, [open]);
+  }, [open, isAdmin]);
 
   async function onSubmit(data: ChallengeFormValues) {
     if (!user) {
@@ -233,74 +237,76 @@ export function CreateChallengeModal() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="userIds"
-              render={() => (
-                <FormItem>
-                  <Collapsible className="border rounded-lg">
-                    <CollapsibleTrigger asChild>
-                      <button type="button" className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900">
-                        <div>
-                          <FormLabel className="text-base font-semibold cursor-pointer">
-                            Invite Members (Optional)
-                          </FormLabel>
-                          <FormDescription className="mt-1">
-                            Select users to add to this challenge.
-                          </FormDescription>
+            {isAdmin && (
+              <FormField
+                control={form.control}
+                name="userIds"
+                render={() => (
+                  <FormItem>
+                    <Collapsible className="border rounded-lg">
+                      <CollapsibleTrigger asChild>
+                        <button type="button" className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900">
+                          <div>
+                            <FormLabel className="text-base font-semibold cursor-pointer">
+                              Invite Members (Optional)
+                            </FormLabel>
+                            <FormDescription className="mt-1">
+                              Select users to add to this challenge.
+                            </FormDescription>
+                          </div>
+                          <ChevronDown className="h-5 w-5 opacity-50" />
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="border-t px-4 py-3">
+                        <div className="space-y-3">
+                          {loadingUsers ? (
+                            <p className="text-sm text-gray-500">Loading users...</p>
+                          ) : users.length === 0 ? (
+                            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                              <p className="text-sm text-blue-800 dark:text-blue-200">
+                                No other users available yet. You can invite members later after creating the challenge.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="max-h-60 overflow-y-auto space-y-3 border rounded p-3">
+                              {users.map((user) => (
+                                <FormField
+                                  key={user.id}
+                                  control={form.control}
+                                  name="userIds"
+                                  render={({ field }) => {
+                                    const isChecked = field.value?.includes(user.id) || false;
+                                    return (
+                                      <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={isChecked}
+                                            onCheckedChange={(checked) => {
+                                              const newValue = checked
+                                                ? [...(field.value || []), user.id]
+                                                : (field.value || []).filter((id) => id !== user.id);
+                                              field.onChange(newValue);
+                                            }}
+                                          />
+                                        </FormControl>
+                                        <FormLabel className="font-normal cursor-pointer">
+                                          {user.username} ({user.email})
+                                        </FormLabel>
+                                      </FormItem>
+                                    );
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <ChevronDown className="h-5 w-5 opacity-50" />
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="border-t px-4 py-3">
-                      <div className="space-y-3">
-                        {loadingUsers ? (
-                          <p className="text-sm text-gray-500">Loading users...</p>
-                        ) : users.length === 0 ? (
-                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-                            <p className="text-sm text-blue-800 dark:text-blue-200">
-                              No other users available yet. You can invite members later after creating the challenge.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="max-h-60 overflow-y-auto space-y-3 border rounded p-3">
-                            {users.map((user) => (
-                              <FormField
-                                key={user.id}
-                                control={form.control}
-                                name="userIds"
-                                render={({ field }) => {
-                                  const isChecked = field.value?.includes(user.id) || false;
-                                  return (
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                      <FormControl>
-                                        <Checkbox
-                                          checked={isChecked}
-                                          onCheckedChange={(checked) => {
-                                            const newValue = checked
-                                              ? [...(field.value || []), user.id]
-                                              : (field.value || []).filter((id) => id !== user.id);
-                                            field.onChange(newValue);
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <FormLabel className="font-normal cursor-pointer">
-                                        {user.username} ({user.email})
-                                      </FormLabel>
-                                    </FormItem>
-                                  );
-                                }}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      </CollapsibleContent>
+                    </Collapsible>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="addCreator"

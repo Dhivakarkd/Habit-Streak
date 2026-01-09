@@ -56,6 +56,34 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       throw error;
     }
 
+    // ... previous code
+
+    // If we have a user, we should fetch their check-in status for today
+    // The RPC might not return the check-in history deeply nested
+    let todayCheckinsMap: Record<string, any> = {};
+
+    if (userId && data && data.length > 0) {
+      const challengeIds = data.map((c: any) => c.id);
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: checkinsData } = await supabase
+        .from('checkins')
+        .select('*')
+        .in('challenge_id', challengeIds)
+        .eq('user_id', userId)
+        .eq('check_in_date', today);
+
+      if (checkinsData) {
+        checkinsData.forEach((checkin: any) => {
+          todayCheckinsMap[checkin.challenge_id] = {
+            id: checkin.id,
+            date: checkin.check_in_date,
+            status: checkin.status
+          };
+        });
+      }
+    }
+
     // Map RPC result to standardized Challenge type
     // Note: RPC returns snake_case, we map to camelCase for frontend
     const challenges = (data || []).map((c: any) => ({
@@ -69,7 +97,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       currentStreak: c.current_streak,
       bestStreak: c.best_streak,
       completionRate: c.completion_rate,
-      isMember: c.is_member
+      isMember: c.is_member,
+      // Attach checkins array (containing just today's checkin if it exists)
+      // The frontend expects an array of checkins to find today's status
+      checkins: todayCheckinsMap[c.id] ? [todayCheckinsMap[c.id]] : []
     }));
 
     return NextResponse.json({

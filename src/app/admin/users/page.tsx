@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DialogFooter } from '@/components/ui/dialog';
-import { Shield, Users, UserPlus, Search, MoreVertical, Edit, Key, Crown, UserCheck } from 'lucide-react';
+import { Shield, Users, UserPlus, Search, MoreVertical, Edit, Key, Crown, UserCheck, Trash2 } from 'lucide-react';
 import { AddUserDialog } from '@/components/add-user-dialog';
 import { EditUserDialog } from '@/components/edit-user-dialog';
 import { SetPasswordDialog } from '@/components/set-password-dialog';
@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
-    action: 'promote' | 'demote' | 'revoke' | null;
+    action: 'promote' | 'demote' | 'revoke' | 'delete' | null;
     userIds: string[];
   }>({ open: false, action: null, userIds: [] });
   const [addUserOpen, setAddUserOpen] = useState(false);
@@ -141,36 +141,63 @@ export default function AdminUsersPage() {
     if (!confirmDialog.action || !user?.id) return;
 
     try {
-      const endpoint =
-        confirmDialog.action === 'promote'
-          ? '/api/admin/users/bulk-promote'
-          : '/api/admin/users/bulk-demote';
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': user.id,
-        },
-        body: JSON.stringify({ userIds: confirmDialog.userIds }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to perform action');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        toast({
-          title: 'Success',
-          description: `Successfully ${confirmDialog.action}d ${confirmDialog.userIds.length} user(s)`,
+      if (confirmDialog.action === 'delete') {
+        const userId = confirmDialog.userIds[0]; // Currently supporting single delete via this flow
+        const response = await fetch('/api/admin/users/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': user.id,
+          },
+          body: JSON.stringify({ userId }),
         });
-        setSelectedUsers(new Set());
-        fetchUsers();
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to delete user');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          toast({
+            title: 'Success',
+            description: 'User deleted successfully',
+          });
+          setSelectedUsers(new Set());
+          fetchUsers();
+        }
+      } else {
+        const endpoint =
+          confirmDialog.action === 'promote'
+            ? '/api/admin/users/bulk-promote'
+            : '/api/admin/users/bulk-demote';
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': user.id,
+          },
+          body: JSON.stringify({ userIds: confirmDialog.userIds }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to perform action');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          toast({
+            title: 'Success',
+            description: `Successfully ${confirmDialog.action}d ${confirmDialog.userIds.length} user(s)`,
+          });
+          setSelectedUsers(new Set());
+          fetchUsers();
+        }
       }
     } catch (error) {
-      console.error('Bulk action failed:', error);
+      console.error('Action failed:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to perform action',
@@ -385,6 +412,13 @@ export default function AdminUsersPage() {
                       setSelectedUser(u);
                       setSetPasswordOpen(true);
                     }}
+                    onDelete={(u) => {
+                      setConfirmDialog({
+                        open: true,
+                        action: 'delete',
+                        userIds: [u.id],
+                      });
+                    }}
                   />
                 ))}
               </div>
@@ -417,6 +451,13 @@ export default function AdminUsersPage() {
                     onSetPassword={(u) => {
                       setSelectedUser(u);
                       setSetPasswordOpen(true);
+                    }}
+                    onDelete={(u) => {
+                      setConfirmDialog({
+                        open: true,
+                        action: 'delete',
+                        userIds: [u.id],
+                      });
                     }}
                   />
                 ))}
@@ -451,6 +492,13 @@ export default function AdminUsersPage() {
                       setSelectedUser(u);
                       setSetPasswordOpen(true);
                     }}
+                    onDelete={(u) => {
+                      setConfirmDialog({
+                        open: true,
+                        action: 'delete',
+                        userIds: [u.id],
+                      });
+                    }}
                   />
                 ))}
               </div>
@@ -472,16 +520,18 @@ export default function AdminUsersPage() {
             <AlertDialogDescription>
               {confirmDialog.action === 'promote'
                 ? `Are you sure you want to promote ${confirmDialog.userIds.length} user(s) to admin?`
-                : `Are you sure you want to remove admin privileges from ${confirmDialog.userIds.length} user(s)?`}
+                : confirmDialog.action === 'demote'
+                ? `Are you sure you want to remove admin privileges from ${confirmDialog.userIds.length} user(s)?`
+                : `Are you sure you want to delete this user? This action cannot be undone and will remove the user from all challenges.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <DialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={executeBulkAction}
-              className={confirmDialog.action === 'demote' ? 'bg-red-600 hover:bg-red-700' : ''}
+              className={confirmDialog.action === 'demote' || confirmDialog.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
             >
-              {confirmDialog.action === 'promote' ? 'Promote' : 'Remove Admin'}
+              {confirmDialog.action === 'promote' ? 'Promote' : confirmDialog.action === 'demote' ? 'Remove Admin' : 'Delete User'}
             </AlertDialogAction>
           </DialogFooter>
         </AlertDialogContent>
@@ -530,12 +580,14 @@ function UserCard({
   onSelect,
   onEdit,
   onSetPassword,
+  onDelete,
 }: {
   user: AdminUser;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onEdit: (user: AdminUser) => void;
   onSetPassword: (user: AdminUser) => void;
+  onDelete: (user: AdminUser) => void;
 }) {
   const getBorderColor = () => {
     if (user.isSuperAdmin) return 'border-l-red-500';
@@ -603,7 +655,8 @@ function UserCard({
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit(user);
+                // Use setTimeout to allow dropdown to close before opening dialog
+                setTimeout(() => onEdit(user), 100);
               }}
             >
               <Edit className="mr-2 h-4 w-4" />
@@ -612,12 +665,26 @@ function UserCard({
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                onSetPassword(user);
+                setTimeout(() => onSetPassword(user), 100);
               }}
             >
               <Key className="mr-2 h-4 w-4" />
               Set Password
             </DropdownMenuItem>
+            {!user.isSuperAdmin && (
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/30"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Use setTimeout to allow dropdown to close before opening dialog
+                  // This prevents focus trap conflicts causing UI freeze
+                  setTimeout(() => onDelete(user), 100);
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete User
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
